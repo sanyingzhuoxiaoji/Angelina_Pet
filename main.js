@@ -27,7 +27,6 @@ const SETTINGS_DEFAULTS = {
   sedentaryOn: true,
   manualForm: null,          // null = 跟随状态;否则为 GIFS 键名
   petPos: null,              // {x, y}
-  panelPos: null,
   completedToday: 0,
   completedDate: '',         // 'YYYY-MM-DD'
   deliveryDir: null,         // 文件搬运目标文件夹(null = 未设置)
@@ -378,13 +377,15 @@ function createPetWindow() {
 
   if (settings.petPos) {
     const [x, y] = clampToWorkArea(settings.petPos.x, settings.petPos.y, PET_SIZE, PET_SIZE);
-    petWin.setPosition(x, y);
+    petWin.setBounds({ x, y, width: PET_SIZE, height: BUBBLE_H + PET_SIZE });
   } else {
     const { workArea } = screen.getPrimaryDisplay();
-    petWin.setPosition(
-      workArea.x + workArea.width - PET_SIZE - 40,
-      workArea.y + workArea.height - (BUBBLE_H + PET_SIZE) - 40
-    );
+    petWin.setBounds({
+      x: workArea.x + workArea.width - PET_SIZE - 40,
+      y: workArea.y + workArea.height - (BUBBLE_H + PET_SIZE) - 40,
+      width: PET_SIZE,
+      height: BUBBLE_H + PET_SIZE,
+    });
   }
 
   petWin.on('close', (e) => {
@@ -409,16 +410,14 @@ function createPanelWindow() {
   panelWin.loadFile('panel.html');
   panelWin.setAlwaysOnTop(true, 'screen-saver');
 
-  panelWin.on('close', (e) => {
-    if (!isQuitting) { e.preventDefault(); panelWin.hide(); savePanelPos(); }
+  // 点击面板外部(失焦)自动隐藏
+  panelWin.on('blur', () => {
+    if (panelWin.isVisible()) panelWin.hide();
   });
-  panelWin.on('hide', savePanelPos);
-}
 
-function savePanelPos() {
-  if (!panelWin || panelWin.isDestroyed()) return;
-  settings.panelPos = panelWin.getPosition();
-  saveSettings();
+  panelWin.on('close', (e) => {
+    if (!isQuitting) { e.preventDefault(); panelWin.hide(); }
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -468,7 +467,7 @@ function toggleSettingsWindow() {
     y = py;
   }
   y = Math.min(Math.max(y, workArea.y), workArea.y + workArea.height - SETTINGS_H);
-  settingsWin.setPosition(x, y);
+  settingsWin.setBounds({ x, y, width: SETTINGS_W, height: SETTINGS_H });
   settingsWin.show();
   settingsWin.focus();
   settingsWin.webContents.send('settings:push', publicSettings());
@@ -499,17 +498,15 @@ function togglePanel() {
     panelOffset = null;
   }
   y = Math.min(Math.max(y, workArea.y), workArea.y + workArea.height - PANEL_H);
-  panelWin.setPosition(x, y);
+  panelWin.setBounds({ x, y, width: PANEL_W, height: PANEL_H });
   panelWin.show();
   panelWin.focus();
   pushPomodoro();
   pushTodos();
-  panelWin.webContents.send('settings:push', publicSettings());
 }
 
 function pushSettingsToPanel() {
   const payload = publicSettings();
-  if (panelWin && !panelWin.isDestroyed()) panelWin.webContents.send('settings:push', payload);
   if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('settings:push', payload);
 }
 
@@ -701,13 +698,16 @@ ipcMain.on('pet:drag-begin', () => {
       drag.x = tx; drag.y = ty;
     }
     try {
-      petWin.setPosition(Math.round(drag.x), Math.round(drag.y));
+      // setBounds 显式带尺寸:Windows 非整数缩放下 setPosition 会因取整误差让窗口越变越大
+      petWin.setBounds({ x: Math.round(drag.x), y: Math.round(drag.y), width: PET_SIZE, height: BUBBLE_H + PET_SIZE });
       // 面板开着时跟随桌宠一起动
       if (panelWin && !panelWin.isDestroyed() && panelWin.isVisible() && panelOffset) {
-        panelWin.setPosition(
-          Math.round(drag.x) + panelOffset.dx,
-          Math.round(drag.y) + panelOffset.dy
-        );
+        panelWin.setBounds({
+          x: Math.round(drag.x) + panelOffset.dx,
+          y: Math.round(drag.y) + panelOffset.dy,
+          width: PANEL_W,
+          height: PANEL_H,
+        });
       }
     } catch (_) { /* 窗口销毁竞态:下帧 isDestroyed 恢复时会收尾 */ }
   }, 16);
@@ -796,7 +796,12 @@ function startWanderSession() {
       return;
     }
     const step = (WANDER_SPEED * WANDER_TICK_MS) / 1000;
-    petWin.setPosition(Math.round(px + (dx / dist) * step), Math.round(py + (dy / dist) * step));
+    petWin.setBounds({
+      x: Math.round(px + (dx / dist) * step),
+      y: Math.round(py + (dy / dist) * step),
+      width: PET_SIZE,
+      height: BUBBLE_H + PET_SIZE,
+    });
   }, WANDER_TICK_MS);
 }
 
@@ -851,14 +856,6 @@ async function chooseDeliveryDir() {
   return settings.deliveryDir;
 }
 
-// 面板:选择送货目标文件夹
-ipcMain.handle('panel:choose-dir', chooseDeliveryDir);
-
-// 面板:关闭(隐藏,不退出)
-ipcMain.on('panel:close-panel', () => {
-  if (panelWin && !panelWin.isDestroyed()) { panelWin.hide(); savePanelPos(); }
-});
-
 // 面板:番茄钟控制
 ipcMain.on('panel:pomodoro-start', (_e, todo) => {
   noteUserAction();
@@ -900,9 +897,6 @@ function applySettingsPatch(patch) {
   if (pomodoro.phase === 'idle') pushPomodoro();
   pushSettingsToPanel();
 }
-
-// 面板:设置保存
-ipcMain.on('panel:settings-save', (_e, patch) => applySettingsPatch(patch));
 
 // 设置窗口:保存 / 就绪 / 关闭 / 选目录
 ipcMain.on('appsettings:save', (_e, patch) => applySettingsPatch(patch));
