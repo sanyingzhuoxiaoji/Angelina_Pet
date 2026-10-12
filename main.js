@@ -31,6 +31,7 @@ const SETTINGS_DEFAULTS = {
   completedDate: '',         // 'YYYY-MM-DD'
   deliveryDir: null,         // 文件搬运目标文件夹(null = 未设置)
   wanderOn: true,            // 自由巡游开关
+  springDrag: true,          // 弹簧(柔性)拖动开关,false = v1 的 1:1 跟手
 };
 
 function settingsFile() {
@@ -473,6 +474,9 @@ function buildTray() {
   const menu = Menu.buildFromTemplate([
     { label: '形态', submenu: formMenu },
     { type: 'separator' },
+    { label: '弹簧拖动(柔性牵引)', type: 'checkbox', checked: !!settings.springDrag,
+      click: (item) => { settings.springDrag = item.checked; saveSettings(); } },
+    { type: 'separator' },
     { label: '显示面板', click: () => { if (!panelWin.isVisible()) togglePanel(); } },
     { label: '退出', click: () => { isQuitting = true; app.quit(); } },
   ]);
@@ -584,6 +588,7 @@ const SPRING_DAMPING = 0.75;  // 阻尼(每帧速度衰减)
 let drag = null;
 ipcMain.on('pet:drag-begin', () => {
   if (!petWin || petWin.isDestroyed()) return;
+  if (drag) { endDrag(); }    // 防御:上一次拖动会话未正常收尾时先清掉,避免双弹簧叠加
   stopWander();               // 牵引打断巡游
   noteUserAction();
   const c = screen.getCursorScreenPoint();
@@ -592,14 +597,29 @@ ipcMain.on('pet:drag-begin', () => {
   drag.poll = setInterval(() => {
     if (!drag || !petWin || petWin.isDestroyed()) { endDrag(); return; }
     const cur = screen.getCursorScreenPoint();
+    // 防御:显示器配置变化等瞬间光标值可能异常,跳过本帧
+    if (!Number.isFinite(cur.x) || !Number.isFinite(cur.y)) return;
     const tx = cur.x - drag.ox;
     const ty = cur.y - drag.oy;
     if (Math.abs(tx - drag.x) + Math.abs(ty - drag.y) > 2) drag.moved = true;
-    drag.vx = (drag.vx + (tx - drag.x) * SPRING_K) * SPRING_DAMPING;
-    drag.vy = (drag.vy + (ty - drag.y) * SPRING_K) * SPRING_DAMPING;
-    drag.x += drag.vx;
-    drag.y += drag.vy;
-    petWin.setPosition(Math.round(drag.x), Math.round(drag.y));
+
+    if (settings.springDrag) {
+      // 弹簧跟随:带弹性滞后与轻微过冲
+      drag.vx = (drag.vx + (tx - drag.x) * SPRING_K) * SPRING_DAMPING;
+      drag.vy = (drag.vy + (ty - drag.y) * SPRING_K) * SPRING_DAMPING;
+      drag.x += drag.vx;
+      drag.y += drag.vy;
+      // 数值一旦污染(NaN/Infinity)就复位到目标点,避免向系统传非法参数
+      if (!Number.isFinite(drag.x) || !Number.isFinite(drag.y)) {
+        drag.x = tx; drag.y = ty; drag.vx = 0; drag.vy = 0;
+      }
+    } else {
+      // v1 模式:1:1 跟手
+      drag.x = tx; drag.y = ty;
+    }
+    try {
+      petWin.setPosition(Math.round(drag.x), Math.round(drag.y));
+    } catch (_) { /* 窗口销毁竞态:下帧 isDestroyed 检查会收尾 */ }
   }, 16);
 });
 ipcMain.on('pet:drag-move', () => { /* 兼容保留:轮询已覆盖 */ });
