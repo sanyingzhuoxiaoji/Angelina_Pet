@@ -903,7 +903,7 @@ function startIdlePose() {
     activity = null;
     applyForm();
     wanderCooldownUntil = Date.now() + WANDER_COOLDOWN_MS();
-  }, 6000 + Math.random() * 4000);
+  }, 6000 + Math.random() * 2000);   // 播 6~8 秒(约 7 秒)回坐坐
 }
 
 // 交互/番茄钟等打断所有闲置活动
