@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self'; img-src 'self' data:; style-src 'self'">
+  <title>安洁莉娜设置</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <header id="titlebar">
+    <span class="title">⚙️ 设置</span>
+    <button id="close-btn" title="关闭">✕</button>
+  </header>
+
+  <section class="group">
+    <div class="group-title">互动</div>
+    <label class="row">
+      <input id="set-spring" type="checkbox"> 弹簧拖动(柔性牵引,关闭为 1:1 跟手)
+    </label>
+  </section>
+
+  <section class="group">
+    <div class="group-title">健康提醒</div>
+    <label class="row">
+      <input id="set-sedentary-on" type="checkbox"> 久坐提醒
+    </label>
+    <label class="row indent">
+      每 <input id="set-sedentary" type="number" min="5" max="240"> 分钟提醒一次
+    </label>
+  </section>
+
+  <section class="group">
+    <div class="group-title">自由巡游</div>
+    <label class="row">
+      <input id="set-wander-on" type="checkbox"> 闲置后自由巡游
+    </label>
+    <label class="row indent">
+      闲置 <input id="set-wander-idle" type="number" min="1" max="60"> 分钟后开始
+    </label>
+  </section>
+
+  <section class="group">
+    <div class="group-title">文件搬运</div>
+    <div class="row">
+      <span class="dir-label">📦 送货到</span>
+      <span id="delivery-dir" class="dir-path">未设置</span>
+    </div>
+    <div class="row indent">
+      <button id="choose-dir-btn" class="mini-btn">选择文件夹…</button>
+    </div>
+  </section>
+
+  <script src="settings-renderer.js"></script>
+</body>
+</html>

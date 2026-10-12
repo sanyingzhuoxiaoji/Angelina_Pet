@@ -1,0 +1,94 @@
+/* 设置窗口:与面板同风格 */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --accent: #d76a4b;
+  --ink: #4a3b32;
+  --paper: #fdf8f2;
+  --line: #e8ddd2;
+}
+
+html, body {
+  height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+  user-select: none;
+}
+
+body { display: flex; flex-direction: column; }
+
+#titlebar {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+#titlebar .title { font-weight: bold; }
+#close-btn {
+  -webkit-app-region: no-drag;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+#close-btn:hover { color: var(--accent); }
+
+.group {
+  padding: 10px 14px 12px;
+  border-bottom: 1px dashed var(--line);
+}
+.group-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.row.indent { margin-left: 22px; }
+
+input[type='number'] {
+  width: 52px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 12px;
+  color: var(--ink);
+  background: #fff;
+}
+
+.dir-label { flex-shrink: 0; }
+.dir-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  opacity: 0.8;
+  direction: rtl;
+  text-align: left;
+}
+.mini-btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.mini-btn:hover { border-color: var(--accent); color: var(--accent); }

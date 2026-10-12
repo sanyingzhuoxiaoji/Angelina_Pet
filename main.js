@@ -13,6 +13,7 @@ app.setAppUserModelId('com.angelina.pet');
 
 let petWin = null;
 let panelWin = null;
+let settingsWin = null;
 let tray = null;
 let isQuitting = false;
 
@@ -420,6 +421,59 @@ function savePanelPos() {
   saveSettings();
 }
 
+// ---------------------------------------------------------------------------
+// 设置窗口(单例,托盘"设置…"弹出)
+// ---------------------------------------------------------------------------
+const SETTINGS_W = 300;
+const SETTINGS_H = 430;
+
+function createSettingsWindow() {
+  settingsWin = new BrowserWindow({
+    width: SETTINGS_W,
+    height: SETTINGS_H,
+    frame: false,
+    resizable: false,
+    skipTaskbar: true,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'settings-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  settingsWin.loadFile('settings.html');
+  settingsWin.setAlwaysOnTop(true, 'screen-saver');
+
+  settingsWin.on('close', (e) => {
+    if (!isQuitting) { e.preventDefault(); settingsWin.hide(); }
+  });
+}
+
+function toggleSettingsWindow() {
+  if (!settingsWin) return;
+  if (settingsWin.isVisible()) {
+    settingsWin.hide();
+    return;
+  }
+  // 贴桌宠弹出:与面板同样的右侧/左侧逻辑
+  const { workArea } = screen.getPrimaryDisplay();
+  let x = workArea.x;
+  let y = workArea.y;
+  if (petWin && !petWin.isDestroyed()) {
+    const [px, py] = petWin.getPosition();
+    const rightX = px + PET_SIZE + PANEL_GAP_RIGHT;
+    const leftX = px - SETTINGS_W - PANEL_GAP_LEFT;
+    x = (rightX + SETTINGS_W <= workArea.x + workArea.width) ? rightX : leftX;
+    x = Math.min(Math.max(x, workArea.x), workArea.x + workArea.width - SETTINGS_W);
+    y = py;
+  }
+  y = Math.min(Math.max(y, workArea.y), workArea.y + workArea.height - SETTINGS_H);
+  settingsWin.setPosition(x, y);
+  settingsWin.show();
+  settingsWin.focus();
+  settingsWin.webContents.send('settings:push', publicSettings());
+}
+
 function togglePanel() {
   if (!panelWin) return;
   if (panelWin.isVisible()) {
@@ -454,9 +508,9 @@ function togglePanel() {
 }
 
 function pushSettingsToPanel() {
-  if (panelWin && !panelWin.isDestroyed()) {
-    panelWin.webContents.send('settings:push', publicSettings());
-  }
+  const payload = publicSettings();
+  if (panelWin && !panelWin.isDestroyed()) panelWin.webContents.send('settings:push', payload);
+  if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('settings:push', payload);
 }
 
 function publicSettings() {
@@ -467,6 +521,8 @@ function publicSettings() {
     sedentaryOn: settings.sedentaryOn,
     wanderOn: settings.wanderOn,
     deliveryDir: settings.deliveryDir,
+    springDrag: settings.springDrag,
+    wanderIdleMin: settings.wanderIdleMin || 1,
   };
 }
 
@@ -499,34 +555,10 @@ function rebuildTrayMenu() {
     })),
   ];
 
-  const WANDER_IDLE_CHOICES = [1, 2, 3, 5, 10];
-  const settingsMenu = [
-    { label: '弹簧拖动(柔性牵引)', type: 'checkbox', checked: !!settings.springDrag,
-      click: (item) => { settings.springDrag = item.checked; saveSettings(); } },
-    { label: '久坐提醒', type: 'checkbox', checked: !!settings.sedentaryOn,
-      click: (item) => { settings.sedentaryOn = item.checked; saveSettings(); pushSettingsToPanel(); } },
-    { label: `快递地址:${settings.deliveryDir ? path.basename(settings.deliveryDir) : '未设置'}`,
-      enabled: false },
-    { label: '修改快递地址…', click: () => chooseDeliveryDir() },
-    { type: 'separator' },
-    { label: '巡游:闲置后开始', enabled: false },
-    ...WANDER_IDLE_CHOICES.map((min) => ({
-      label: `闲置 ${min} 分钟`,
-      type: 'radio',
-      checked: (settings.wanderIdleMin || 1) === min,
-      click: () => {
-        settings.wanderIdleMin = min;
-        saveSettings();
-        lastUserActionAt = Date.now();   // 改完重新计时,避免立刻就出发
-        pushSettingsToPanel();
-      },
-    })),
-  ];
-
   const menu = Menu.buildFromTemplate([
     { label: '形态', submenu: formMenu },
     { type: 'separator' },
-    { label: '设置', submenu: settingsMenu },
+    { label: '设置…', click: () => toggleSettingsWindow() },
     { type: 'separator' },
     { label: '显示面板', click: () => { if (!panelWin.isVisible()) togglePanel(); } },
     { label: '退出', click: () => { isQuitting = true; app.quit(); } },
@@ -844,8 +876,8 @@ ipcMain.on('panel:bind-todo', (_e, todoId) => {
   pushTodos();
 });
 
-// 面板:设置保存
-ipcMain.on('panel:settings-save', (_e, patch) => {
+// 设置保存(面板与设置窗口共用)
+function applySettingsPatch(patch) {
   const num = (v, min, max, dft) => {
     const n = parseInt(v, 10);
     return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dft;
@@ -855,6 +887,9 @@ ipcMain.on('panel:settings-save', (_e, patch) => {
     settings.restMin = num(patch.restMin, 1, 60, settings.restMin);
     settings.sedentaryMin = num(patch.sedentaryMin, 5, 240, settings.sedentaryMin);
     settings.sedentaryOn = !!patch.sedentaryOn;
+    // 仅在提供时覆盖(面板的保存请求不含这些字段,避免被重置)
+    if (typeof patch.springDrag === 'boolean') settings.springDrag = patch.springDrag;
+    settings.wanderIdleMin = num(patch.wanderIdleMin, 1, 60, settings.wanderIdleMin || 1);
     if (typeof patch.wanderOn === 'boolean') {
       settings.wanderOn = patch.wanderOn;
       if (!settings.wanderOn) stopWander();
@@ -863,8 +898,23 @@ ipcMain.on('panel:settings-save', (_e, patch) => {
   }
   // 改时长立即反映到未开始的阶段显示
   if (pomodoro.phase === 'idle') pushPomodoro();
-  panelWin && !panelWin.isDestroyed() && panelWin.webContents.send('settings:push', publicSettings());
+  pushSettingsToPanel();
+}
+
+// 面板:设置保存
+ipcMain.on('panel:settings-save', (_e, patch) => applySettingsPatch(patch));
+
+// 设置窗口:保存 / 就绪 / 关闭 / 选目录
+ipcMain.on('appsettings:save', (_e, patch) => applySettingsPatch(patch));
+ipcMain.on('appsettings:ready', () => {
+  if (settingsWin && !settingsWin.isDestroyed()) {
+    settingsWin.webContents.send('settings:push', publicSettings());
+  }
 });
+ipcMain.on('appsettings:close', () => {
+  if (settingsWin && !settingsWin.isDestroyed()) settingsWin.hide();
+});
+ipcMain.handle('appsettings:choose-dir', chooseDeliveryDir);
 
 // 面板就绪:全量推一次
 ipcMain.on('panel:ready', () => {
@@ -887,6 +937,7 @@ if (!gotLock) {
   app.whenReady().then(() => {
     createPetWindow();
     createPanelWindow();
+    createSettingsWindow();
     buildTray();
     watchTodos();
   });

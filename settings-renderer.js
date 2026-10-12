@@ -1,0 +1,40 @@
+// 设置窗口渲染端
+'use strict';
+
+const $ = (id) => document.getElementById(id);
+
+function renderSettings(s) {
+  $('set-spring').checked = s.springDrag;
+  $('set-sedentary-on').checked = s.sedentaryOn;
+  $('set-sedentary').value = s.sedentaryMin;
+  $('set-wander-on').checked = s.wanderOn;
+  $('set-wander-idle').value = s.wanderIdleMin || 1;
+  const dirEl = $('delivery-dir');
+  dirEl.textContent = s.deliveryDir || '未设置';
+  dirEl.title = s.deliveryDir || '';
+}
+
+function collectAndSave() {
+  window.appSettingsApi.save({
+    springDrag: $('set-spring').checked,
+    sedentaryOn: $('set-sedentary-on').checked,
+    sedentaryMin: $('set-sedentary').value,
+    wanderOn: $('set-wander-on').checked,
+    wanderIdleMin: $('set-wander-idle').value,
+  });
+}
+for (const id of ['set-spring', 'set-sedentary-on', 'set-sedentary', 'set-wander-on', 'set-wander-idle']) {
+  $(id).addEventListener('change', collectAndSave);
+}
+
+$('choose-dir-btn').addEventListener('click', async () => {
+  const dir = await window.appSettingsApi.chooseDir();
+  const dirEl = $('delivery-dir');
+  dirEl.textContent = dir || '未设置';
+  dirEl.title = dir || '';
+});
+
+$('close-btn').addEventListener('click', () => window.appSettingsApi.close());
+
+window.appSettingsApi.onSettings(renderSettings);
+window.appSettingsApi.ready();
