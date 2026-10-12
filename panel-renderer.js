@@ -112,6 +112,10 @@ function renderSettings(s) {
   $('set-rest').value = s.restMin;
   $('set-sedentary').value = s.sedentaryMin;
   $('set-sedentary-on').checked = s.sedentaryOn;
+  $('set-wander-on').checked = s.wanderOn;
+  const dirEl = $('delivery-dir');
+  dirEl.textContent = s.deliveryDir || '未设置(拖文件给我时会提醒)';
+  dirEl.title = s.deliveryDir || '';
 }
 
 function collectAndSave() {
@@ -120,11 +124,20 @@ function collectAndSave() {
     restMin: $('set-rest').value,
     sedentaryMin: $('set-sedentary').value,
     sedentaryOn: $('set-sedentary-on').checked,
+    wanderOn: $('set-wander-on').checked,
   });
 }
-for (const id of ['set-pomodoro', 'set-rest', 'set-sedentary', 'set-sedentary-on']) {
+for (const id of ['set-pomodoro', 'set-rest', 'set-sedentary', 'set-sedentary-on', 'set-wander-on']) {
   $(id).addEventListener('change', collectAndSave);
 }
+
+$('choose-dir-btn').addEventListener('click', () => {
+  window.panelApi.chooseDir().then((dir) => {
+    const dirEl = $('delivery-dir');
+    dirEl.textContent = dir || '未设置(拖文件给我时会提醒)';
+    dirEl.title = dir || '';
+  });
+});
 
 // ---------------------------------------------------------------------------
 // 其他

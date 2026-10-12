@@ -78,3 +78,23 @@ pet.addEventListener('click', (e) => {
   if (Math.abs(e.screenX - downX) + Math.abs(e.screenY - downY) > 4) return;
   window.angelinaApi.togglePanel();
 });
+
+// ---------------------------------------------------------------------------
+// 文件搬运:拖文件到安洁莉娜身上 → 主进程移动到送货文件夹
+// (光标经过桌宠本体时点击穿透已关闭,窗口可正常接收拖放)
+// ---------------------------------------------------------------------------
+document.addEventListener('dragover', (e) => {
+  if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }
+});
+
+document.addEventListener('drop', (e) => {
+  if (!e.dataTransfer || !e.dataTransfer.files.length) return;
+  e.preventDefault();
+  const paths = [...e.dataTransfer.files]
+    .map((f) => window.angelinaApi.pathForFile(f))
+    .filter(Boolean);
+  if (paths.length) window.angelinaApi.deliverFiles(paths);
+});

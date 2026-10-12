@@ -123,3 +123,28 @@ body { display: flex; flex-direction: column; }
   color: var(--ink);
   background: #fff;
 }
+
+/* 送货文件夹行 */
+.dir-label { flex-shrink: 0; }
+.dir-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  opacity: 0.8;
+  direction: rtl;   /* 长路径优先显示末段(文件夹名) */
+  text-align: left;
+}
+.mini-btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+.mini-btn:hover { border-color: var(--accent); color: var(--accent); }
