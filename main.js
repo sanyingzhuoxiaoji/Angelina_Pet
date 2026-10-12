@@ -32,6 +32,7 @@ const SETTINGS_DEFAULTS = {
   deliveryDir: null,         // 文件搬运目标文件夹(null = 未设置)
   wanderOn: true,            // 自由巡游开关
   springDrag: true,          // 弹簧(柔性)拖动开关,false = v1 的 1:1 跟手
+  wanderIdleMin: 1,          // 闲置多少分钟后开始巡游
 };
 
 function settingsFile() {
@@ -452,6 +453,12 @@ function togglePanel() {
   panelWin.webContents.send('settings:push', publicSettings());
 }
 
+function pushSettingsToPanel() {
+  if (panelWin && !panelWin.isDestroyed()) {
+    panelWin.webContents.send('settings:push', publicSettings());
+  }
+}
+
 function publicSettings() {
   return {
     pomodoroMin: settings.pomodoroMin,
@@ -476,7 +483,7 @@ function buildTray() {
   tray.on('click', () => togglePanel());
 }
 
-// 每次切换形态后重建菜单:跟随状态是动作而非状态项——
+// 每次切换形态/设置后重建菜单:跟随状态是动作而非状态项——
 // 未手动选形态时所有单选圆圈全空;选了具体形态则只有它亮
 function rebuildTrayMenu() {
   if (!tray) return;
@@ -492,11 +499,34 @@ function rebuildTrayMenu() {
     })),
   ];
 
+  const WANDER_IDLE_CHOICES = [1, 2, 3, 5, 10];
+  const settingsMenu = [
+    { label: '弹簧拖动(柔性牵引)', type: 'checkbox', checked: !!settings.springDrag,
+      click: (item) => { settings.springDrag = item.checked; saveSettings(); } },
+    { label: '久坐提醒', type: 'checkbox', checked: !!settings.sedentaryOn,
+      click: (item) => { settings.sedentaryOn = item.checked; saveSettings(); pushSettingsToPanel(); } },
+    { label: `快递地址:${settings.deliveryDir ? path.basename(settings.deliveryDir) : '未设置'}`,
+      enabled: false },
+    { label: '修改快递地址…', click: () => chooseDeliveryDir() },
+    { type: 'separator' },
+    { label: '巡游:闲置后开始', enabled: false },
+    ...WANDER_IDLE_CHOICES.map((min) => ({
+      label: `闲置 ${min} 分钟`,
+      type: 'radio',
+      checked: (settings.wanderIdleMin || 1) === min,
+      click: () => {
+        settings.wanderIdleMin = min;
+        saveSettings();
+        lastUserActionAt = Date.now();   // 改完重新计时,避免立刻就出发
+        pushSettingsToPanel();
+      },
+    })),
+  ];
+
   const menu = Menu.buildFromTemplate([
     { label: '形态', submenu: formMenu },
     { type: 'separator' },
-    { label: '弹簧拖动(柔性牵引)', type: 'checkbox', checked: !!settings.springDrag,
-      click: (item) => { settings.springDrag = item.checked; saveSettings(); } },
+    { label: '设置', submenu: settingsMenu },
     { type: 'separator' },
     { label: '显示面板', click: () => { if (!panelWin.isVisible()) togglePanel(); } },
     { label: '退出', click: () => { isQuitting = true; app.quit(); } },
@@ -671,7 +701,7 @@ function endDrag() {
 // 自由巡游:pomodoro idle + 无手动形态 + 闲置 wanderIdleMin 后开始,
 // 随机目标点全屏漫游(骑行/探险/购物 GIF 每轮随机),可被拖动/点击/番茄钟打断
 // ---------------------------------------------------------------------------
-const WANDER_IDLE_MS = 1 * 60 * 1000;   // 闲置多久开始巡游
+const WANDER_IDLE_MS = () => settings.wanderIdleMin * 60 * 1000;   // 闲置多久开始巡游(托盘设置可调)
 const WANDER_COOLDOWN_MS = () => (5 + Math.random() * 10) * 60 * 1000; // 两轮巡游间隔 5~15 分钟
 const WANDER_SPEED = 120;               // px/s
 const WANDER_TICK_MS = 33;
@@ -746,7 +776,7 @@ setInterval(() => {
   if (['work', 'workEnd', 'rest', 'restEnd'].includes(pomodoro.phase)) return;
   if (drag) return;
   if (Date.now() < wanderCooldownUntil) return;
-  if (Date.now() - lastUserActionAt >= WANDER_IDLE_MS && Date.now() - lastPomodoroActionAt >= WANDER_IDLE_MS) {
+  if (Date.now() - lastUserActionAt >= WANDER_IDLE_MS() && Date.now() - lastPomodoroActionAt >= WANDER_IDLE_MS()) {
     startWanderSession();
   }
 }, 1000);
@@ -773,8 +803,8 @@ ipcMain.on('pet:deliver-files', (_e, paths) => {
   deliverFiles(Array.isArray(paths) ? paths.filter((p) => typeof p === 'string') : []);
 });
 
-// 面板:选择送货目标文件夹
-ipcMain.handle('panel:choose-dir', async () => {
+// 选择送货目标文件夹(面板设置与托盘设置共用)
+async function chooseDeliveryDir() {
   const res = await dialog.showOpenDialog(panelWin, {
     title: '选择送货目标文件夹',
     properties: ['openDirectory', 'createDirectory'],
@@ -784,8 +814,13 @@ ipcMain.handle('panel:choose-dir', async () => {
     saveSettings();
     showBubble('收到!以后包裹就送到这里~', 3000);
   }
+  pushSettingsToPanel();
+  rebuildTrayMenu();   // 刷新"快递地址:xxx"标签
   return settings.deliveryDir;
-});
+}
+
+// 面板:选择送货目标文件夹
+ipcMain.handle('panel:choose-dir', chooseDeliveryDir);
 
 // 面板:关闭(隐藏,不退出)
 ipcMain.on('panel:close-panel', () => {
