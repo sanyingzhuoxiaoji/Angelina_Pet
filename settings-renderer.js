@@ -9,6 +9,7 @@ function renderSettings(s) {
   $('set-sedentary').value = s.sedentaryMin;
   $('set-wander-on').checked = s.wanderOn;
   $('set-wander-idle').value = s.wanderIdleMin || 1;
+  $('set-cooldown').value = s.idleCooldownMin || 3;
   const dirEl = $('delivery-dir');
   dirEl.textContent = s.deliveryDir || '未设置';
   dirEl.title = s.deliveryDir || '';
@@ -21,9 +22,10 @@ function collectAndSave() {
     sedentaryMin: $('set-sedentary').value,
     wanderOn: $('set-wander-on').checked,
     wanderIdleMin: $('set-wander-idle').value,
+    idleCooldownMin: $('set-cooldown').value,
   });
 }
-for (const id of ['set-spring', 'set-sedentary-on', 'set-sedentary', 'set-wander-on', 'set-wander-idle']) {
+for (const id of ['set-spring', 'set-sedentary-on', 'set-sedentary', 'set-wander-on', 'set-wander-idle', 'set-cooldown']) {
   $(id).addEventListener('change', collectAndSave);
 }
 

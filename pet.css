@@ -10,13 +10,16 @@ html, body {
   cursor: default;
 }
 
-/* 气泡区(顶部 110px):默认穿透,气泡可见时可交互 */
+/* 气泡:贴在人物头顶上方(窗口高 350 = 顶部气泡区 110 + 图区 240) */
 .bubble {
   position: absolute;
-  top: 6px;
+  top: auto;
+  bottom: 248px;               /* 底边距窗口底 248px ≈ 图区顶(240)+8px,即紧贴头顶 */
   left: 50%;
   transform: translateX(-50%);
   max-width: 92%;
+  max-height: 100px;
+  overflow: hidden;            /* 超长文本向上生长,超出窗口裁剪 */
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid #4a3b32;

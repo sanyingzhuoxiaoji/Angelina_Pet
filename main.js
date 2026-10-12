@@ -32,7 +32,8 @@ const SETTINGS_DEFAULTS = {
   deliveryDir: null,         // 文件搬运目标文件夹(null = 未设置)
   wanderOn: true,            // 自由巡游开关
   springDrag: true,          // 弹簧(柔性)拖动开关,false = v1 的 1:1 跟手
-  wanderIdleMin: 1,          // 闲置多少分钟后开始巡游
+  wanderIdleMin: 1,          // 闲置多少分钟后开始巡游/小动作
+  idleCooldownMin: 3,        // 巡游/小动作结束后冷却分钟数(实际 ±1 随机,默认 2~4)
 };
 
 function settingsFile() {
@@ -153,6 +154,7 @@ function resolveForm() {
     if (pomodoro.phase === 'rest') return Math.random() < 0.5 ? 'rest' : 'restAlt';
     return 'restEnd';
   }
+  if (activity === 'idlePose') return currentIdleForm;
   if (activity === 'wander') return currentWanderForm;
   return 'idle';
 }
@@ -170,7 +172,7 @@ function sendToPet(channel, payload) {
 }
 
 function startPomodoro(todo) {
-  stopWander();
+  interruptIdleActivities();
   stopTicker();
   pomodoro.paused = false;
   pomodoro.todo = todo || null;
@@ -528,6 +530,7 @@ function publicSettings() {
     deliveryDir: settings.deliveryDir,
     springDrag: settings.springDrag,
     wanderIdleMin: settings.wanderIdleMin || 1,
+    idleCooldownMin: settings.idleCooldownMin || 3,
   };
 }
 
@@ -550,7 +553,7 @@ function rebuildTrayMenu() {
   if (!tray) return;
 
   const formMenu = [
-    { label: '跟随状态', click: () => setManualForm(null) },
+    { label: '跟随状态', type: 'radio', checked: !settings.manualForm, click: () => setManualForm(null) },
     { type: 'separator' },
     ...MANUAL_FORMS.map((key) => ({
       label: GIFS[key].label,
@@ -678,6 +681,7 @@ ipcMain.on('pet:drag-begin', () => {
   if (!petWin || petWin.isDestroyed()) return;
   if (drag) { endDrag(); }    // 防御:上一次拖动会话未正常收尾时先清掉,避免双弹簧叠加
   stopWander();               // 牵引打断巡游
+  stopIdlePose();             // 牵引打断小动作
   noteUserAction();
   const c = screen.getCursorScreenPoint();
   const [px, py] = petWin.getPosition();
@@ -742,7 +746,12 @@ function endDrag() {
 // 随机目标点全屏漫游(骑行/探险/购物 GIF 每轮随机),可被拖动/点击/番茄钟打断
 // ---------------------------------------------------------------------------
 const WANDER_IDLE_MS = () => settings.wanderIdleMin * 60 * 1000;   // 闲置多久开始巡游(托盘设置可调)
-const WANDER_COOLDOWN_MS = () => (5 + Math.random() * 10) * 60 * 1000; // 两轮巡游间隔 5~15 分钟
+const WANDER_COOLDOWN_MS = () => {
+  // 冷却 = 设置值 ±1 随机分钟(默认 3 → 2~4 分钟)
+  const base = Math.max(1, settings.idleCooldownMin || 3);
+  const min = Math.max(1, base - 1);
+  return (min + Math.random() * 2) * 60 * 1000;
+};
 const WANDER_SPEED = 120;               // px/s
 const WANDER_TICK_MS = 33;
 const WANDER_FORMS = ['wander', 'restAlt', 'restEnd'];   // 骑行/潜水/纸飞机
@@ -765,16 +774,52 @@ function stopWander() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 闲置小动作:随机播一段海边/购物/拍照/探险,几秒后回坐坐(与巡游共享计时和冷却)
+// ---------------------------------------------------------------------------
+const IDLE_POSE_FORMS = ['rest', 'wanderAlt2', 'workEnd', 'wanderAlt'];   // 海边/购物/拍照/探险
+let idlePoseTimer = null;
+let currentIdleForm = 'rest';
+
+function stopIdlePose() {
+  if (activity !== 'idlePose') return;
+  clearTimeout(idlePoseTimer);
+  idlePoseTimer = null;
+  activity = null;
+  applyForm();
+  wanderCooldownUntil = Date.now() + WANDER_COOLDOWN_MS();
+}
+
+function startIdlePose() {
+  if (!petWin || petWin.isDestroyed()) return;
+  activity = 'idlePose';
+  currentIdleForm = IDLE_POSE_FORMS[Math.floor(Math.random() * IDLE_POSE_FORMS.length)];
+  applyForm();
+  idlePoseTimer = setTimeout(() => {
+    idlePoseTimer = null;
+    if (activity !== 'idlePose') return;
+    activity = null;
+    applyForm();
+    wanderCooldownUntil = Date.now() + WANDER_COOLDOWN_MS();
+  }, 6000 + Math.random() * 4000);
+}
+
+// 交互/番茄钟等打断所有闲置活动
+function interruptIdleActivities() {
+  stopWander();
+  stopIdlePose();
+}
+
 function startWanderSession() {
   if (!petWin || petWin.isDestroyed()) return;
   activity = 'wander';
   currentWanderForm = WANDER_FORMS[Math.floor(Math.random() * WANDER_FORMS.length)];
   applyForm();
   const { workArea } = screen.getPrimaryDisplay();
-  const margin = PET_SIZE;
+  const marginX = 30, marginY = 10;   // 目标点可贴近屏幕边缘,只需保证窗口不出屏
   const randPoint = () => ({
-    x: workArea.x + margin + Math.random() * Math.max(1, workArea.width - margin * 2 - PET_SIZE),
-    y: workArea.y + margin + Math.random() * Math.max(1, workArea.height - margin * 2 - (BUBBLE_H + PET_SIZE)),
+    x: workArea.x + marginX + Math.random() * Math.max(1, workArea.width - marginX * 2 - PET_SIZE),
+    y: workArea.y + marginY + Math.random() * Math.max(1, workArea.height - marginY * 2 - (BUBBLE_H + PET_SIZE)),
   });
 
   const session = { targetsLeft: 1 + Math.floor(Math.random() * 3), target: randPoint(), pauseUntil: 0, poll: null };
@@ -830,7 +875,8 @@ setInterval(() => {
   if (drag) return;
   if (Date.now() < wanderCooldownUntil) return;
   if (Date.now() - lastUserActionAt >= WANDER_IDLE_MS() && Date.now() - lastPomodoroActionAt >= WANDER_IDLE_MS()) {
-    startWanderSession();
+    // 闲置达标:50% 巡游,50% 单次小动作(海边/购物/拍照/探险)
+    if (Math.random() < 0.5) startWanderSession(); else startIdlePose();
   }
 }, 1000);
 
@@ -903,9 +949,10 @@ function applySettingsPatch(patch) {
     // 仅在提供时覆盖(面板的保存请求不含这些字段,避免被重置)
     if (typeof patch.springDrag === 'boolean') settings.springDrag = patch.springDrag;
     settings.wanderIdleMin = num(patch.wanderIdleMin, 1, 60, settings.wanderIdleMin || 1);
+    settings.idleCooldownMin = num(patch.idleCooldownMin, 1, 60, settings.idleCooldownMin || 3);
     if (typeof patch.wanderOn === 'boolean') {
       settings.wanderOn = patch.wanderOn;
-      if (!settings.wanderOn) stopWander();
+      if (!settings.wanderOn) interruptIdleActivities();
     }
     saveSettings();
   }
