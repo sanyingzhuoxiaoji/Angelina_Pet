@@ -3,6 +3,7 @@
 'use strict';
 
 const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, Notification, dialog } = require('electron');
+const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { pick } = require('./lines');
@@ -148,6 +149,7 @@ const FACING = {
 function resolveForm() {
   if (settings.manualForm) return settings.manualForm;
   if (activity === 'carry') return 'carry';
+  if (activity === 'fly') return 'restEnd';   // 纸飞机回家
   if (['work', 'workEnd', 'rest', 'restEnd'].includes(pomodoro.phase)) {
     if (pomodoro.phase === 'work') return 'work';
     if (pomodoro.phase === 'workEnd') return 'workEnd';
@@ -173,12 +175,75 @@ function sendToPet(channel, payload) {
 
 function startPomodoro(todo) {
   interruptIdleActivities();
+  stopFlyHome(false);
   stopTicker();
   pomodoro.paused = false;
   pomodoro.todo = todo || null;
   setPhase('work', settings.pomodoroMin * 60);
   startTicker();
-  showBubble(pick('pomodoroStart'));
+  // 不在放置的位置 → 纸飞机飞回家,落地播报今日完成数(锁形态时不飞,只播报)
+  if (!settings.manualForm && settings.petPos) {
+    const [px, py] = petWin.getPosition();
+    const home = settings.petPos;
+    if (Math.hypot(px - home.x, py - home.y) > 10) startFlyHome();
+    else showBubble(todayDoneLine(), 6000);
+  } else {
+    showBubble(pick('pomodoroStart'));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 纸飞机回家:番茄钟启动时飞回被放置的位置(settings.petPos 实时读取,不钳制工作区)
+// ---------------------------------------------------------------------------
+let fly = null;   // { poll, dirSign }
+
+function startFlyHome() {
+  if (!petWin || petWin.isDestroyed() || !settings.petPos) return;
+  activity = 'fly';
+  applyForm();
+  const home = { x: settings.petPos.x, y: settings.petPos.y };
+  const speed = (300 * 33) / 1000;   // 300 px/s
+  fly = {
+    poll: setInterval(() => {
+      if (!fly || !petWin || petWin.isDestroyed()) { stopFlyHome(false); return; }
+      const [px, py] = petWin.getPosition();
+      const dx = home.x - px;
+      const dy = home.y - py;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 8) { stopFlyHome(true); return; }
+      const movingSign = Math.sign(dx);
+      if (movingSign !== 0 && movingSign !== fly.dirSign) {
+        fly.dirSign = movingSign;
+        const facing = FACING.restEnd;   // 纸飞机朝左
+        sendToPet('form:dir', { flip: (movingSign > 0 && facing === 'left') || (movingSign < 0 && facing === 'right') });
+      }
+      petWin.setBounds({
+        x: Math.round(px + (dx / dist) * speed),
+        y: Math.round(py + (dy / dist) * speed),
+        width: PET_SIZE,
+        height: BUBBLE_H + PET_SIZE,
+      });
+    }, 33),
+    dirSign: 0,
+  };
+}
+
+function stopFlyHome(arrived) {
+  if (fly) {
+    clearInterval(fly.poll);
+    fly = null;
+    activity = null;
+    applyForm();
+    if (arrived) {
+      showBubble(todayDoneLine(), 6000);
+    }
+  }
+}
+
+function todayDoneLine() {
+  return doneTodayCount > 0
+    ? pick('flyDone').replace('{n}', doneTodayCount)
+    : pick('flyNone');
 }
 
 function startTicker() {
@@ -281,14 +346,25 @@ function stickyDataFile() {
   return path.join(app.getPath('appData'), 'desktop-sticky-note', 'sticky-note-data.json');
 }
 
+function isToday(iso) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` === todayStr();
+}
+
+let doneTodayCount = 0;   // 便签中今天完成的待办数(番茄钟落地播报用)
+
 function readTodos() {
   try {
     const raw = fs.readFileSync(stickyDataFile(), 'utf8');
     const data = JSON.parse(raw);
-    todoItems = (Array.isArray(data.items) ? data.items : [])
+    const items = Array.isArray(data.items) ? data.items : [];
+    todoItems = items
       .filter((it) => it.status === 'todo')
-      .map((it) => ({ id: it.id, text: it.text }))
+      .map((it) => ({ id: it.id, text: it.text, remindAt: it.remindAt || null }))
       .filter((it) => it.text);
+    doneTodayCount = items.filter((it) => it.status === 'done' && isToday(it.finishedAt)).length;
     todosAvailable = true;
   } catch (_) {
     // 文件不存在/被占用/脏帧:保留上次结果,只标记可用性
@@ -296,6 +372,31 @@ function readTodos() {
   }
   pushTodos();
 }
+
+// 今日提醒数(status todo 且 remindAt 是今天)
+function todayRemindCount() {
+  return todoItems.filter((it) => isToday(it.remindAt)).length;
+}
+
+let fullscreenActive = false;   // 前台有全屏应用(看视频/F11/游戏),桌宠让位
+// 每 30 分钟播报今日提醒(有提醒才说;全屏隐藏时不打扰)
+setInterval(() => {
+  if (fullscreenActive) return;
+  if (!todosAvailable) return;
+  const n = todayRemindCount();
+  if (n <= 0) return;
+  showBubble(pick('remindDaily').replace('{n}', n), 7000);
+  notify('今日提醒', `博士,今天还有 ${n} 条提醒没处理哦~`);
+}, 30 * 60 * 1000);
+// 启动 1 分钟后先播一次
+setTimeout(() => {
+  if (fullscreenActive || !todosAvailable) return;
+  const n = todayRemindCount();
+  if (n > 0) {
+    showBubble(pick('remindDaily').replace('{n}', n), 7000);
+    notify('今日提醒', `博士,今天还有 ${n} 条提醒没处理哦~`);
+  }
+}, 60 * 1000);
 
 function pushTodos() {
   if (panelWin && !panelWin.isDestroyed()) {
@@ -682,6 +783,7 @@ ipcMain.on('pet:drag-begin', () => {
   if (drag) { endDrag(); }    // 防御:上一次拖动会话未正常收尾时先清掉,避免双弹簧叠加
   stopWander();               // 牵引打断巡游
   stopIdlePose();             // 牵引打断小动作
+  if (activity === 'fly') stopFlyHome(false);   // 拖动打断回巢飞行:留在拖放处
   noteUserAction();
   const c = screen.getCursorScreenPoint();
   const [px, py] = petWin.getPosition();
@@ -868,6 +970,7 @@ function startWanderSession() {
 
 // 巡游调度:每秒检查是否该出发
 setInterval(() => {
+  if (fullscreenActive) return;
   if (!settings.wanderOn) return;
   if (settings.manualForm) return;
   if (activity !== null) return;
@@ -981,8 +1084,100 @@ ipcMain.on('panel:ready', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 应用生命周期
+// 全屏让位(移植便签方案):常驻 PowerShell 轮询前台窗口,600ms/拍
+// 前台窗口完整覆盖显示器且非桌面类名 → 全屏应用,三窗口隐藏让位;退出自愈恢复
 // ---------------------------------------------------------------------------
+const FS_SHELL_CLASSES = new Set(['Progman', 'WorkerW', 'Shell_TrayWnd']);   // 桌面/任务栏不算全屏
+let fsWatcher = null;
+let panelWasVisible = false;
+let settingsWasVisible = false;
+
+function startFullscreenWatcher() {
+  const ps = `
+Add-Type @"
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+public class FW {
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr h, int i);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder sb, int n);
+}
+"@
+while ($true) {
+  $h = [FW]::GetForegroundWindow()
+  if ($h -ne [IntPtr]::Zero) {
+    $r = New-Object RECT
+    [void][FW]::GetWindowRect($h, [ref]$r)
+    $ex = [FW]::GetWindowLong($h, -20)
+    $sb = New-Object System.Text.StringBuilder 256
+    [void][FW]::GetClassName($h, $sb, 256)
+    Write-Output "$($r.Left),$($r.Top),$($r.Right),$($r.Bottom),$(($ex -band 8) -ne 0),$($sb.ToString())"
+  }
+  Start-Sleep -Milliseconds 600
+}`;
+  const b64 = Buffer.from(ps, 'utf16le').toString('base64');
+  fsWatcher = spawn('powershell.exe', ['-NoProfile', '-EncodedCommand', b64], {
+    stdio: ['ignore', 'pipe', 'ignore'],
+    windowsHide: true,
+  });
+  fsWatcher.stdout.setEncoding('utf8');
+  let buf = '';
+  fsWatcher.stdout.on('data', (chunk) => {
+    buf += chunk;
+    let idx;
+    while ((idx = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, idx).trim();
+      buf = buf.slice(idx + 1);
+      if (line) handleForegroundLine(line);
+    }
+  });
+}
+
+function handleForegroundLine(line) {
+  if (!petWin || petWin.isDestroyed()) return;
+  const parts = line.split(',');
+  if (parts.length < 6) return;
+  const L = +parts[0], T = +parts[1], R = +parts[2], B = +parts[3];
+  const cls = parts.slice(5).join(',');
+  const b = petWin.getBounds();
+  const monitor = screen.getDisplayNearestPoint({ x: b.x + (b.width >> 1), y: b.y + (b.height >> 1) }).bounds;
+  // 前台窗口完整覆盖整块屏幕(非 workArea)→ 全屏应用;桌面/任务栏类名排除,
+  // 否则点一下桌面(Progman 全屏覆盖)会被误判成全屏
+  const fs = L <= monitor.x && T <= monitor.y
+    && R >= monitor.x + monitor.width && B >= monitor.y + monitor.height
+    && !FS_SHELL_CLASSES.has(cls);
+  if (fs !== fullscreenActive) {
+    fullscreenActive = fs;
+    applyOverlayRule();
+  }
+}
+
+function applyOverlayRule() {
+  if (!petWin || petWin.isDestroyed()) return;
+  if (fullscreenActive) {
+    // 让位:记录面板/设置窗可见性,三窗口全部隐藏(桌宠必现,直接藏)
+    panelWasVisible = panelWin && !panelWin.isDestroyed() && panelWin.isVisible();
+    settingsWasVisible = settingsWin && !settingsWin.isDestroyed() && settingsWin.isVisible();
+    if (panelWin && !panelWin.isDestroyed() && panelWin.isVisible()) panelWin.hide();
+    if (settingsWin && !settingsWin.isDestroyed() && settingsWin.isVisible()) settingsWin.hide();
+    if (petWin.isVisible()) petWin.hide();
+    return;
+  }
+  // 自愈:退出全屏后恢复(不抢焦点)
+  if (!petWin.isVisible()) petWin.showInactive();
+  if (panelWasVisible && panelWin && !panelWin.isDestroyed() && !panelWin.isVisible()) {
+    panelWin.showInactive();
+    panelWasVisible = false;
+  }
+  if (settingsWasVisible && settingsWin && !settingsWin.isDestroyed() && !settingsWin.isVisible()) {
+    settingsWin.showInactive();
+    settingsWasVisible = false;
+  }
+}
+
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
@@ -997,6 +1192,7 @@ if (!gotLock) {
     createSettingsWindow();
     buildTray();
     watchTodos();
+    startFullscreenWatcher();
   });
 
   app.on('before-quit', () => { isQuitting = true; });
