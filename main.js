@@ -681,6 +681,7 @@ ipcMain.on('pet:drag-begin', () => {
   if (drag) { endDrag(); }    // 防御:上一次拖动会话未正常收尾时先清掉,避免双弹簧叠加
   stopWander();               // 牵引打断巡游
   noteUserAction();
+  applyForm();                // 立即切到拖动形态(探险)并复位镜像
   const c = screen.getCursorScreenPoint();
   const [px, py] = petWin.getPosition();
   drag = { ox: c.x - px, oy: c.y - py, vx: 0, vy: 0, x: px, y: py, moved: false, dirSign: 0 };
@@ -742,6 +743,7 @@ function endDrag() {
     }
   }
   drag = null;
+  applyForm();   // 恢复拖动前的状态形态(坐坐/看书/巡游等)并复位镜像
 }
 
 // ---------------------------------------------------------------------------
