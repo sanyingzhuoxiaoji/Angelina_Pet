@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self'; img-src 'self' data:; style-src 'self'">
+  <title>安洁莉娜面板</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <header id="titlebar">
+    <span class="title">⏳ 安洁莉娜的番茄钟</span>
+    <button id="close-btn" title="收起">✕</button>
+  </header>
+
+  <!-- 番茄钟 -->
+  <section id="timer-section">
+    <div id="phase-label">待机中</div>
+    <div id="time-display">25:00</div>
+    <div id="bind-label" class="hidden"></div>
+    <div id="timer-controls">
+      <button id="btn-start" class="primary">开始</button>
+      <button id="btn-skip">跳过</button>
+      <button id="btn-stop">停止</button>
+    </div>
+    <div id="completed-label">今日完成 🍅 × 0</div>
+  </section>
+
+  <!-- 待办(只读,来自桌面便签) -->
+  <section id="todo-section">
+    <div class="section-title">📋 待办(来自桌面便签 · 点击绑定)</div>
+    <ul id="todo-list"></ul>
+    <div id="todo-empty" class="empty hidden"></div>
+  </section>
+
+  <!-- 设置 -->
+  <section id="settings-section">
+    <div class="section-title">⚙️ 设置</div>
+    <div class="settings-row">
+      <label>番茄 <input id="set-pomodoro" type="number" min="1" max="180"> 分</label>
+      <label>休息 <input id="set-rest" type="number" min="1" max="60"> 分</label>
+    </div>
+    <div class="settings-row">
+      <label>
+        <input id="set-sedentary-on" type="checkbox"> 久坐提醒
+      </label>
+      <label>每 <input id="set-sedentary" type="number" min="5" max="240"> 分</label>
+    </div>
+  </section>
+
+  <script src="panel-renderer.js"></script>
+</body>
+</html>

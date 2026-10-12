@@ -1,0 +1,15 @@
+{
+  "name": "angelina-pet",
+  "productName": "安洁莉娜桌宠",
+  "version": "0.1.0",
+  "description": "明日方舟安洁莉娜桌宠 - GIF 桌宠 + 番茄钟 + 便签待办只读展示",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^43.7.9"
+  }
+}
