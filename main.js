@@ -681,10 +681,10 @@ ipcMain.on('pet:drag-begin', () => {
   if (drag) { endDrag(); }    // 防御:上一次拖动会话未正常收尾时先清掉,避免双弹簧叠加
   stopWander();               // 牵引打断巡游
   noteUserAction();
-  applyForm();                // 立即切到拖动形态(探险)并复位镜像
   const c = screen.getCursorScreenPoint();
   const [px, py] = petWin.getPosition();
   drag = { ox: c.x - px, oy: c.y - py, vx: 0, vy: 0, x: px, y: py, moved: false, dirSign: 0 };
+  applyForm();                // drag 赋值后再切形态(探险),否则 resolveForm 看到的仍是 null
   drag.poll = setInterval(() => {
     if (!drag || !petWin || petWin.isDestroyed()) { endDrag(); return; }
     const cur = screen.getCursorScreenPoint();
