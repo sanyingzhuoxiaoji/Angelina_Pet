@@ -15,5 +15,6 @@ contextBridge.exposeInMainWorld('angelinaApi', {
   },
   // 主进程 → 渲染端
   onForm: (cb) => ipcRenderer.on('form:set', (_e, form) => cb(form)),
+  onDir: (cb) => ipcRenderer.on('form:dir', (_e, payload) => cb(payload)),
   onBubble: (cb) => ipcRenderer.on('bubble:show', (_e, payload) => cb(payload)),
 });

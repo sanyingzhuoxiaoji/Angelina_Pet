@@ -133,13 +133,22 @@ function setPhase(phase, remainingSec) {
 
 // ---------------------------------------------------------------------------
 // 活动状态(wander 巡游 / carry 送货动画),与番茄钟阶段正交
-// 形态优先级:手动 > carry > 番茄钟阶段 > wander > idle
+// 形态优先级:手动 > carry > 拖动 > 番茄钟阶段 > wander > idle
 // ---------------------------------------------------------------------------
 let activity = null;   // null | 'wander' | 'carry'
+
+// 方向类形态的原生朝向;移动方向与朝向相反时渲染端 scaleX(-1) 镜像
+const FACING = {
+  wanderAlt: 'left',   // 探险(拖动用)
+  wander: 'right',     // 骑行
+  restAlt: 'right',    // 潜水
+  restEnd: 'left',     // 纸飞机
+};
 
 function resolveForm() {
   if (settings.manualForm) return settings.manualForm;
   if (activity === 'carry') return 'carry';
+  if (drag) return 'wanderAlt';   // 拖动中:探险
   if (['work', 'workEnd', 'rest', 'restEnd'].includes(pomodoro.phase)) {
     if (pomodoro.phase === 'work') return 'work';
     if (pomodoro.phase === 'workEnd') return 'workEnd';
@@ -152,6 +161,7 @@ function resolveForm() {
 
 function applyForm() {
   sendToPet('form:set', resolveForm());
+  sendToPet('form:dir', { flip: false });   // 换形态时复位朝向
 }
 
 // 兼容旧调用点
@@ -673,7 +683,7 @@ ipcMain.on('pet:drag-begin', () => {
   noteUserAction();
   const c = screen.getCursorScreenPoint();
   const [px, py] = petWin.getPosition();
-  drag = { ox: c.x - px, oy: c.y - py, vx: 0, vy: 0, x: px, y: py, moved: false };
+  drag = { ox: c.x - px, oy: c.y - py, vx: 0, vy: 0, x: px, y: py, moved: false, dirSign: 0 };
   drag.poll = setInterval(() => {
     if (!drag || !petWin || petWin.isDestroyed()) { endDrag(); return; }
     const cur = screen.getCursorScreenPoint();
@@ -692,6 +702,11 @@ ipcMain.on('pet:drag-begin', () => {
       // 数值一旦污染(NaN/Infinity)就复位到目标点,避免向系统传非法参数
       if (!Number.isFinite(drag.x) || !Number.isFinite(drag.y)) {
         drag.x = tx; drag.y = ty; drag.vx = 0; drag.vy = 0;
+      }
+      // 拖动方向(弹簧速度)翻转时通知渲染端镜像(探险朝左)
+      if (Math.abs(drag.vx) > 0.5 && Math.sign(drag.vx) !== drag.dirSign) {
+        drag.dirSign = Math.sign(drag.vx);
+        sendToPet('form:dir', { flip: drag.dirSign > 0 });   // 往右拖 → 镜像
       }
     } else {
       // v1 模式:1:1 跟手
@@ -737,7 +752,7 @@ const WANDER_IDLE_MS = () => settings.wanderIdleMin * 60 * 1000;   // 闲置多�
 const WANDER_COOLDOWN_MS = () => (5 + Math.random() * 10) * 60 * 1000; // 两轮巡游间隔 5~15 分钟
 const WANDER_SPEED = 120;               // px/s
 const WANDER_TICK_MS = 33;
-const WANDER_FORMS = ['wander', 'wanderAlt', 'wanderAlt2'];
+const WANDER_FORMS = ['wander', 'restAlt', 'restEnd'];   // 骑行/潜水/纸飞机
 let currentWanderForm = 'wander';
 let wander = null;        // { phase: 'walk'|'pause', target, poll }
 let lastUserActionAt = Date.now();
@@ -796,6 +811,14 @@ function startWanderSession() {
       return;
     }
     const step = (WANDER_SPEED * WANDER_TICK_MS) / 1000;
+    // 移动方向翻转时通知渲染端镜像(朝向表 FACING)
+    const movingSign = Math.sign(dx);
+    if (movingSign !== 0 && movingSign !== session.dirSign) {
+      session.dirSign = movingSign;
+      const facing = FACING[currentWanderForm];
+      const flip = (movingSign > 0 && facing === 'left') || (movingSign < 0 && facing === 'right');
+      sendToPet('form:dir', { flip });
+    }
     petWin.setBounds({
       x: Math.round(px + (dx / dist) * step),
       y: Math.round(py + (dy / dist) * step),

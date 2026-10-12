@@ -19,11 +19,16 @@ const FORM_SRC = {
 };
 
 // ---------------------------------------------------------------------------
-// 形态切换
+// 形态切换 + 方向镜像
 // ---------------------------------------------------------------------------
 window.angelinaApi.onForm((form) => {
   const src = FORM_SRC[form] || FORM_SRC.idle;
   if (pet.getAttribute('src') !== src) pet.setAttribute('src', src);
+  pet.style.transform = '';          // 换形态复位镜像,由 form:dir 重新决定
+});
+
+window.angelinaApi.onDir(({ flip }) => {
+  pet.style.transform = flip ? 'scaleX(-1)' : '';
 });
 
 // ---------------------------------------------------------------------------
