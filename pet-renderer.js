@@ -53,14 +53,23 @@ document.addEventListener('mousemove', (e) => {
 });
 
 // ---------------------------------------------------------------------------
-// 拖动 + 点击(拖动超过阈值不算点击)
+// 拖动 + 点击(拖动超过阈值不算点击;判定范围限定在角色主体,透明边角不算)
 // ---------------------------------------------------------------------------
 let mouseDown = false;
 let downX = 0;
 let downY = 0;
 
+// 角色主体判定:img 中央竖向区域(素材左右各有透明留白,不含发梢/扫帚尖等突出物)
+function withinCharacter(e) {
+  const r = pet.getBoundingClientRect();
+  return e.clientX >= r.left + r.width * 0.15 &&
+         e.clientX <= r.left + r.width * 0.85 &&
+         e.clientY >= r.top + r.height * 0.05;
+}
+
 pet.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
+  if (!withinCharacter(e)) return;   // 透明边角不触发拖动/点击
   mouseDown = true;
   downX = e.screenX;
   downY = e.screenY;
@@ -74,6 +83,7 @@ document.addEventListener('mouseup', () => {
 });
 
 pet.addEventListener('click', (e) => {
+  if (!withinCharacter(e)) return;   // 缩小判定范围
   // 拖动过的松手不触发面板开关
   if (Math.abs(e.screenX - downX) + Math.abs(e.screenY - downY) > 4) return;
   window.angelinaApi.togglePanel();

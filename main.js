@@ -339,6 +339,10 @@ const PET_SIZE = 240;      // 桌宠窗口宽(GIF 方形)
 const BUBBLE_H = 110;      // 气泡区高度(窗口总高 = BUBBLE_H + PET_SIZE)
 const PANEL_W = 320;
 const PANEL_H = 480;
+const PANEL_GAP_RIGHT = 20;   // 面板贴右侧时与桌宠窗口的间距(避开发丝/饰品)
+const PANEL_GAP_LEFT = 2;     // 面板贴左侧时的间距(左侧素材留白多,贴近些)
+
+let panelOffset = null;   // 面板打开时相对桌宠窗口的偏移,拖动桌宠时面板跟随用
 
 function clampToWorkArea(x, y, w, h) {
   const { x: wx, y: wy, width: ww, height: wh } = screen.getPrimaryDisplay().workArea;
@@ -419,29 +423,33 @@ function togglePanel() {
   if (!panelWin) return;
   if (panelWin.isVisible()) {
     panelWin.hide();
-    savePanelPos();
-  } else {
-    // 紧贴桌宠弹出:默认贴右侧;右侧放不下(会出屏)就贴左侧;垂直方向跟桌宠对齐并钳制到工作区
-    const { workArea } = screen.getPrimaryDisplay();
-    let x;
-    let y = workArea.y;
-    if (petWin && !petWin.isDestroyed()) {
-      const [px, py] = petWin.getPosition();
-      const rightX = px + PET_SIZE + 8;
-      const leftX = px - PANEL_W - 8;
-      x = (rightX + PANEL_W <= workArea.x + workArea.width) ? rightX : leftX;
-      // 左侧也放不下(桌宠贴着左边缘)时钳回工作区内
-      x = Math.min(Math.max(x, workArea.x), workArea.x + workArea.width - PANEL_W);
-      y = py;
-    }
-    y = Math.min(Math.max(y, workArea.y), workArea.y + workArea.height - PANEL_H);
-    panelWin.setPosition(x, y);
-    panelWin.show();
-    panelWin.focus();
-    pushPomodoro();
-    pushTodos();
-    panelWin.webContents.send('settings:push', publicSettings());
+    panelOffset = null;
+    return;
   }
+  // 紧贴桌宠弹出:默认贴右侧(间距避开发丝/饰品),右侧放不下(会出屏)就贴左侧
+  // (左侧间距很小,抵消素材留白);垂直方向跟桌宠对齐并钳制到工作区
+  const { workArea } = screen.getPrimaryDisplay();
+  let x;
+  let y;
+  if (petWin && !petWin.isDestroyed()) {
+    const [px, py] = petWin.getPosition();
+    const rightX = px + PET_SIZE + PANEL_GAP_RIGHT;
+    const leftX = px - PANEL_W - PANEL_GAP_LEFT;
+    x = (rightX + PANEL_W <= workArea.x + workArea.width) ? rightX : leftX;
+    // 左侧也放不下(桌宠贴着左边缘)时钳回工作区内
+    x = Math.min(Math.max(x, workArea.x), workArea.x + workArea.width - PANEL_W);
+    y = py;
+    panelOffset = { dx: x - px, dy: y - py };
+  } else {
+    panelOffset = null;
+  }
+  y = Math.min(Math.max(y, workArea.y), workArea.y + workArea.height - PANEL_H);
+  panelWin.setPosition(x, y);
+  panelWin.show();
+  panelWin.focus();
+  pushPomodoro();
+  pushTodos();
+  panelWin.webContents.send('settings:push', publicSettings());
 }
 
 function publicSettings() {
@@ -632,7 +640,14 @@ ipcMain.on('pet:drag-begin', () => {
     }
     try {
       petWin.setPosition(Math.round(drag.x), Math.round(drag.y));
-    } catch (_) { /* 窗口销毁竞态:下帧 isDestroyed 检查会收尾 */ }
+      // 面板开着时跟随桌宠一起动
+      if (panelWin && !panelWin.isDestroyed() && panelWin.isVisible() && panelOffset) {
+        panelWin.setPosition(
+          Math.round(drag.x) + panelOffset.dx,
+          Math.round(drag.y) + panelOffset.dy
+        );
+      }
+    } catch (_) { /* 窗口销毁竞态:下帧 isDestroyed 恢复时会收尾 */ }
   }, 16);
 });
 ipcMain.on('pet:drag-move', () => { /* 兼容保留:轮询已覆盖 */ });
