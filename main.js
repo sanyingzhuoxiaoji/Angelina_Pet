@@ -460,8 +460,17 @@ function buildTray() {
   tray = new Tray(icon);
   tray.setToolTip('安洁莉娜桌宠');
 
+  rebuildTrayMenu();
+  tray.on('click', () => togglePanel());
+}
+
+// 每次切换形态后重建菜单:跟随状态是动作而非状态项——
+// 未手动选形态时所有单选圆圈全空;选了具体形态则只有它亮
+function rebuildTrayMenu() {
+  if (!tray) return;
+
   const formMenu = [
-    { label: '跟随状态', type: 'radio', checked: !settings.manualForm, click: () => setManualForm(null) },
+    { label: '跟随状态', click: () => setManualForm(null) },
     { type: 'separator' },
     ...MANUAL_FORMS.map((key) => ({
       label: GIFS[key].label,
@@ -482,13 +491,13 @@ function buildTray() {
   ]);
 
   tray.setContextMenu(menu);
-  tray.on('click', () => togglePanel());
 }
 
 function setManualForm(key) {
   settings.manualForm = key;
   saveSettings();
   applyPomodoroForm();
+  rebuildTrayMenu();
 }
 
 // ---------------------------------------------------------------------------
@@ -643,7 +652,7 @@ function endDrag() {
 // 自由巡游:pomodoro idle + 无手动形态 + 闲置 wanderIdleMin 后开始,
 // 随机目标点全屏漫游(骑行/探险/购物 GIF 每轮随机),可被拖动/点击/番茄钟打断
 // ---------------------------------------------------------------------------
-const WANDER_IDLE_MS = 3 * 60 * 1000;   // 闲置多久开始巡游(验证时可临时改小)
+const WANDER_IDLE_MS = 1 * 60 * 1000;   // 闲置多久开始巡游
 const WANDER_COOLDOWN_MS = () => (5 + Math.random() * 10) * 60 * 1000; // 两轮巡游间隔 5~15 分钟
 const WANDER_SPEED = 120;               // px/s
 const WANDER_TICK_MS = 33;
