@@ -421,15 +421,19 @@ function togglePanel() {
     panelWin.hide();
     savePanelPos();
   } else {
-    // 默认弹在桌宠旁边,越界钳制到工作区
-    let [x, y] = settings.panelPos || [0, 0];
-    if (!settings.panelPos && petWin && !petWin.isDestroyed()) {
+    // 紧贴桌宠弹出:默认贴右侧;右侧放不下(会出屏)就贴左侧;垂直方向跟桌宠对齐并钳制到工作区
+    const { workArea } = screen.getPrimaryDisplay();
+    let x;
+    let y = workArea.y;
+    if (petWin && !petWin.isDestroyed()) {
       const [px, py] = petWin.getPosition();
-      x = px + PET_SIZE + 8;
+      const rightX = px + PET_SIZE + 8;
+      const leftX = px - PANEL_W - 8;
+      x = (rightX + PANEL_W <= workArea.x + workArea.width) ? rightX : leftX;
+      // 左侧也放不下(桌宠贴着左边缘)时钳回工作区内
+      x = Math.min(Math.max(x, workArea.x), workArea.x + workArea.width - PANEL_W);
       y = py;
     }
-    const { workArea } = screen.getPrimaryDisplay();
-    x = Math.min(Math.max(x, workArea.x), workArea.x + workArea.width - PANEL_W);
     y = Math.min(Math.max(y, workArea.y), workArea.y + workArea.height - PANEL_H);
     panelWin.setPosition(x, y);
     panelWin.show();
