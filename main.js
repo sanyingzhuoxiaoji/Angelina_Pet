@@ -139,7 +139,6 @@ let activity = null;   // null | 'wander' | 'carry'
 
 // 方向类形态的原生朝向;移动方向与朝向相反时渲染端 scaleX(-1) 镜像
 const FACING = {
-  wanderAlt: 'left',   // 探险(拖动用)
   wander: 'right',     // 骑行
   restAlt: 'right',    // 潜水
   restEnd: 'left',     // 纸飞机
@@ -148,7 +147,6 @@ const FACING = {
 function resolveForm() {
   if (settings.manualForm) return settings.manualForm;
   if (activity === 'carry') return 'carry';
-  if (drag) return 'wanderAlt';   // 拖动中:探险
   if (['work', 'workEnd', 'rest', 'restEnd'].includes(pomodoro.phase)) {
     if (pomodoro.phase === 'work') return 'work';
     if (pomodoro.phase === 'workEnd') return 'workEnd';
@@ -683,8 +681,7 @@ ipcMain.on('pet:drag-begin', () => {
   noteUserAction();
   const c = screen.getCursorScreenPoint();
   const [px, py] = petWin.getPosition();
-  drag = { ox: c.x - px, oy: c.y - py, vx: 0, vy: 0, x: px, y: py, moved: false, dirSign: 0 };
-  applyForm();                // drag 赋值后再切形态(探险),否则 resolveForm 看到的仍是 null
+  drag = { ox: c.x - px, oy: c.y - py, vx: 0, vy: 0, x: px, y: py, moved: false };
   drag.poll = setInterval(() => {
     if (!drag || !petWin || petWin.isDestroyed()) { endDrag(); return; }
     const cur = screen.getCursorScreenPoint();
@@ -703,11 +700,6 @@ ipcMain.on('pet:drag-begin', () => {
       // 数值一旦污染(NaN/Infinity)就复位到目标点,避免向系统传非法参数
       if (!Number.isFinite(drag.x) || !Number.isFinite(drag.y)) {
         drag.x = tx; drag.y = ty; drag.vx = 0; drag.vy = 0;
-      }
-      // 拖动方向(弹簧速度)翻转时通知渲染端镜像(探险朝左)
-      if (Math.abs(drag.vx) > 0.5 && Math.sign(drag.vx) !== drag.dirSign) {
-        drag.dirSign = Math.sign(drag.vx);
-        sendToPet('form:dir', { flip: drag.dirSign > 0 });   // 往右拖 → 镜像
       }
     } else {
       // v1 模式:1:1 跟手
@@ -743,7 +735,6 @@ function endDrag() {
     }
   }
   drag = null;
-  applyForm();   // 恢复拖动前的状态形态(坐坐/看书/巡游等)并复位镜像
 }
 
 // ---------------------------------------------------------------------------
