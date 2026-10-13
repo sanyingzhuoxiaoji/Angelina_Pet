@@ -37,6 +37,8 @@ const SETTINGS_DEFAULTS = {
   wanderIdleMin: 1,          // 闲置多少分钟后开始巡游/小动作
   idleCooldownMin: 3,        // 巡游/小动作结束后冷却分钟数(实际 ±1 随机,默认 2~4)
   pomodoroMode: 'down',      // 番茄钟模式:'down' 倒计时 | 'up' 正向(秒表)
+  focusDate: '',             // 今日专注累计所属日期(YYYY-MM-DD,跨天自动归零)
+  focusMinutesToday: 0,      // 今日累计专注分钟(小数,秒累积)
 };
 
 function settingsFile() {
@@ -184,6 +186,43 @@ function sendToPet(channel, payload) {
   if (petWin && !petWin.isDestroyed()) petWin.webContents.send(channel, payload);
 }
 
+// ---------------------------------------------------------------------------
+// 今日专注累计(跨 0 点自动归零:日期不符即在读写前归零)
+// ---------------------------------------------------------------------------
+function ensureFocusDay() {
+  if (settings.focusDate !== todayStr()) {
+    settings.focusDate = todayStr();
+    settings.focusMinutesToday = 0;
+    saveSettings();
+  }
+}
+
+function addFocusSeconds(sec) {
+  if (sec <= 0) return;
+  ensureFocusDay();
+  settings.focusMinutesToday = Math.round(((settings.focusMinutesToday || 0) * 60 + sec)) / 60;
+  saveSettings();
+}
+
+// 本段工作实际专注秒数
+function sessionFocusSeconds() {
+  if (pomodoro.phase !== 'work') return 0;
+  if (pomodoro.mode === 'up') return pomodoro.elapsed;
+  return Math.max(0, pomodoro.total - pomodoro.remaining);
+}
+
+function fmtFocus(min) {
+  const m = Math.round(min);
+  if (m < 60) return `${m} 分钟`;
+  const h = Math.floor(m / 60);
+  return `${h} 小时 ${m % 60} 分`;
+}
+
+function todayFocusText() {
+  ensureFocusDay();
+  return fmtFocus(settings.focusMinutesToday || 0);
+}
+
 function startPomodoro(todo) {
   interruptIdleActivities();
   stopFlyHome(false);
@@ -200,9 +239,9 @@ function startPomodoro(todo) {
     const [px, py] = petWin.getPosition();
     const home = settings.petPos;
     if (Math.hypot(px - home.x, py - home.y) > 10) startFlyHome();
-    else showBubble(todayDoneLine(), 6000);
+    else showBubble(startHomeLine(), 6000);
   } else {
-    showBubble(pick('pomodoroStart'));
+    showBubble(startHomeLine(), 6000);
   }
 }
 
@@ -256,9 +295,19 @@ function stopFlyHome(arrived) {
 }
 
 function todayDoneLine() {
-  return doneTodayCount > 0
-    ? pick('flyDone').replace('{n}', doneTodayCount)
-    : pick('flyNone');
+  ensureFocusDay();
+  const m = todayFocusText();
+  if (doneTodayCount > 0) return pick('flyDone').replace('{n}', doneTodayCount).replace('{m}', m);
+  if ((settings.focusMinutesToday || 0) >= 1) return pick('flyNone').replace('{m}', m);
+  return pick('flyZero');
+}
+
+function startHomeLine() {
+  ensureFocusDay();
+  if ((settings.focusMinutesToday || 0) >= 1) {
+    return pick('startHome').replace('{m}', todayFocusText());
+  }
+  return pick('startHomeZero');
 }
 
 function startTicker() {
@@ -287,6 +336,7 @@ function onTick() {
 
   switch (pomodoro.phase) {
     case 'work': {
+      addFocusSeconds(sessionFocusSeconds());
       settings.completedDate = todayStr();
       settings.completedToday = completedToday() + 1;
       saveSettings();
@@ -323,6 +373,7 @@ function pausePomodoro() {
 
 function skipPomodoro() {
   if (pomodoro.phase === 'work') {
+    addFocusSeconds(sessionFocusSeconds());
     // 正向模式"跳过"= 提前收工,时长可能不足,不计完成
     if (pomodoro.mode !== 'up') {
       settings.completedDate = todayStr();
@@ -340,6 +391,7 @@ function skipPomodoro() {
 function stopPomodoro() {
   // 正向模式停止:满一个番茄时长算完成,走完成→休息流程;不足则静默回空闲
   if (pomodoro.mode === 'up' && pomodoro.phase === 'work' && pomodoro.elapsed >= settings.pomodoroMin * 60) {
+    addFocusSeconds(sessionFocusSeconds());
     settings.completedDate = todayStr();
     settings.completedToday = completedToday() + 1;
     saveSettings();
@@ -348,6 +400,7 @@ function stopPomodoro() {
     setPhase('workEnd', WORK_END_SEC);
     return;
   }
+  addFocusSeconds(sessionFocusSeconds());   // 不足时长也专注了就算数
   pomodoro.todo = null;
   pomodoro.mode = settings.pomodoroMode === 'up' ? 'up' : 'down';
   pomodoro.paused = false;
