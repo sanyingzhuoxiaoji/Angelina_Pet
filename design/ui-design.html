@@ -395,24 +395,30 @@ h2.chapter img { height: 22px; }
   background: url('../Angelina/UI素材/2.png') no-repeat center / contain;
   opacity: .8; pointer-events: none;
 }
-.pc .pa-note {   /* 待办条目:无色块,与面板背景一致 */
-  background: transparent;
-  border: none;
-  box-shadow: none;
+.pc .pa-note {   /* 待办条目:方案 B 同款气泡 */
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 6px 10px;
+  box-shadow: 0 2px 5px rgba(74,59,50,.06);
   transform: none;
 }
+.pc .pa-btns { margin: 10px 0; }
+.pc-body .pa-mode { margin-top: 4px; }
+.pc .pa-duration { margin: 8px 0 4px; }
+.pc .pa-done { margin: 8px 0 6px; }
 .pc-timechip {   /* 与主窗口计时同款:手账纸片(不倾斜) */
-  display: flex; align-items: center; justify-content: center; gap: 12px;
-  margin: 6px auto 2px;
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin: 12px auto 4px;
   background: var(--paper); border: 2px dashed var(--ink); border-radius: 12px;
-  padding: 8px 18px;
+  padding: 10px 22px;
   box-shadow: 3px 4px 0 rgba(74,59,50,.18);
   width: fit-content;
 }
 .pc-timechip .digits { font-size: 34px; font-weight: 800; color: var(--accent); line-height: 1; }
 .pc.is-rest .pc-timechip .digits { color: var(--teal); }
 .pc-timechip .phase {
-  font-family: 'ZCOOL KuaiLe', sans-serif; font-size: 12px;
+  font-family: 'Baloo 2', monospace; font-size: 19px; font-weight: 700;
   color: var(--accent); letter-spacing: 2px;
 }
 .pc.is-rest .pc-timechip .phase { color: var(--teal); }
