@@ -1073,6 +1073,9 @@ ipcMain.on('panel:bind-todo', (_e, todoId) => {
   pushTodos();
 });
 
+// 面板:设置保存(模式/时长等)
+ipcMain.on('panel:settings-save', (_e, patch) => applySettingsPatch(patch));
+
 // 设置保存(面板与设置窗口共用)
 function applySettingsPatch(patch) {
   const num = (v, min, max, dft) => {
@@ -1084,7 +1087,8 @@ function applySettingsPatch(patch) {
     settings.restMin = num(patch.restMin, 1, 60, settings.restMin);
     if (patch.pomodoroMode === 'down' || patch.pomodoroMode === 'up') settings.pomodoroMode = patch.pomodoroMode;
     settings.sedentaryMin = num(patch.sedentaryMin, 5, 240, settings.sedentaryMin);
-    settings.sedentaryOn = !!patch.sedentaryOn;
+    // 仅在显式提供时覆盖(面板的部分保存不含这些字段,避免被误重置)
+    if (typeof patch.sedentaryOn === 'boolean') settings.sedentaryOn = patch.sedentaryOn;
     // 仅在提供时覆盖(面板的保存请求不含这些字段,避免被重置)
     if (typeof patch.springDrag === 'boolean') settings.springDrag = patch.springDrag;
     settings.wanderIdleMin = num(patch.wanderIdleMin, 1, 60, settings.wanderIdleMin || 1);
