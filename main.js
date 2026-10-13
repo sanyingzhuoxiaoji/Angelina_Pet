@@ -659,7 +659,7 @@ function syncTimerPos(px, py) {
   if (px === undefined || py === undefined) { [px, py] = petWin.getPosition(); }
   timerWin.setBounds({
     x: Math.round(px) + Math.round((PET_SIZE - TIMER_W) / 2),
-    y: Math.round(py) + 320,
+    y: Math.round(py) + BUBBLE_H + PET_SIZE - 30,   // 相对窗口底部定位,顶端与人物下沿衔接
     width: TIMER_W,
     height: TIMER_H,
   });
