@@ -382,12 +382,12 @@ h2.chapter img { height: 22px; }
   font-size: 13px; overflow: hidden; position: relative;
 }
 .pc-head {
-  position: relative; height: 64px; flex-shrink: 0;
+  position: relative; height: 86px; flex-shrink: 0;
   background: #2b2622 url('../Angelina/UI素材/22.png') center / cover;
   display: flex; align-items: center; justify-content: center;
 }
 .pc-head::before { content: ''; position: absolute; inset: 0; background: rgba(43,38,34,.62); }
-.pc-head .logo { height: 34px; position: relative; filter: drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
+.pc-head .logo { height: 44px; position: relative; filter: drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
 .pc-body { padding: 8px 16px 12px; display: flex; flex-direction: column; flex: 1; min-height: 0; position: relative; }
 .pc-sweet {   /* 素材2 Sweet 侧条 */
   position: absolute; right: 4px; top: 10px;
@@ -395,11 +395,17 @@ h2.chapter img { height: 22px; }
   background: url('../Angelina/UI素材/2.png') no-repeat center / contain;
   opacity: .8; pointer-events: none;
 }
-.pc-timechip {   /* 与主窗口计时同款:手账纸片 */
+.pc .pa-note {   /* 待办条目:无色块,与面板背景一致 */
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  transform: none;
+}
+.pc-timechip {   /* 与主窗口计时同款:手账纸片(不倾斜) */
   display: flex; align-items: center; justify-content: center; gap: 12px;
   margin: 6px auto 2px;
   background: var(--paper); border: 2px dashed var(--ink); border-radius: 12px;
-  padding: 8px 18px; transform: rotate(-1.5deg);
+  padding: 8px 18px;
   box-shadow: 3px 4px 0 rgba(74,59,50,.18);
   width: fit-content;
 }
@@ -535,7 +541,7 @@ h2.chapter img { height: 22px; }
         </div>
         <div class="pa-done">今日完成 🍅 × 2</div>
         <div class="pa-todos">
-          <div class="cap"><img src="../Angelina/UI素材/7.png" alt=""> 今日待办 · 点击绑定</div>
+          <div class="cap"><img src="../Angelina/UI素材/7.png" alt=""> 待办 · 点击绑定</div>
           <div class="pa-note"><span>写周报</span><span class="tomato">🍅 目标</span></div>
           <div class="pa-note"><span>复习高中英语单词</span><span class="tomato">🍅</span></div>
         </div>
