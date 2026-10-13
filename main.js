@@ -540,7 +540,7 @@ function showBubble(text, duration = 5000) {
 // 窗口
 // ---------------------------------------------------------------------------
 const PET_SIZE = 240;      // 桌宠窗口宽(GIF 方形)
-const BUBBLE_H = 110;      // 气泡区高度(窗口总高 = BUBBLE_H + PET_SIZE)
+const BUBBLE_H = 150;      // 气泡区高度(窗口总高 = BUBBLE_H + PET_SIZE;加高以容纳长台词)
 const PANEL_W = 320;
 const PANEL_H = 480;
 const PANEL_GAP_RIGHT = 20;   // 面板贴右侧时与桌宠窗口的间距(避开发丝/饰品)

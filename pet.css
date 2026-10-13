@@ -17,8 +17,8 @@ html, body {
   bottom: 248px;               /* 底边距窗口底 248px ≈ 图区顶(240)+8px,即紧贴头顶 */
   left: 50%;
   transform: translateX(-50%);
-  max-width: 92%;
-  max-height: 100px;
+  max-width: 96%;
+  max-height: 140px;
   overflow: hidden;            /* 超长文本向上生长,超出窗口裁剪 */
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.95);
