@@ -237,7 +237,7 @@ function startFlyHome() {
         width: PET_SIZE,
         height: BUBBLE_H + PET_SIZE,
       });
-      syncTimerPos();
+      syncTimerPos(Math.round(px + (dx / dist) * speed), Math.round(py + (dy / dist) * speed));
     }, 33),
     dirSign: 0,
   };
@@ -599,11 +599,17 @@ function createTimerWindow() {
 }
 
 // 计时窗贴桌宠左侧、人物上身高度;桌宠每次移动后调用
-function syncTimerPos() {
+// 可传精确坐标(拖动/巡游/飞行的本帧值),避免二次取整;setBounds 显式带尺寸防漂移
+function syncTimerPos(px, py) {
   if (!timerWin || timerWin.isDestroyed() || !timerWin.isVisible()) return;
   if (!petWin || petWin.isDestroyed()) return;
-  const [px, py] = petWin.getPosition();
-  timerWin.setPosition(px - TIMER_W - 6, py + 120);
+  if (px === undefined || py === undefined) { [px, py] = petWin.getPosition(); }
+  timerWin.setBounds({
+    x: Math.round(px) - TIMER_W - 6,
+    y: Math.round(py) + 120,
+    width: TIMER_W,
+    height: TIMER_H,
+  });
 }
 
 function updateTimerVisibility(phase) {
@@ -910,7 +916,7 @@ ipcMain.on('pet:drag-begin', () => {
           height: PANEL_H,
         });
       }
-      syncTimerPos();
+      syncTimerPos(Math.round(drag.x), Math.round(drag.y));
     } catch (_) { /* 窗口销毁竞态:下帧 isDestroyed 恢复时会收尾 */ }
   }, 16);
 });
@@ -1053,7 +1059,7 @@ function startWanderSession() {
       width: PET_SIZE,
       height: BUBBLE_H + PET_SIZE,
     });
-    syncTimerPos();
+    syncTimerPos(Math.round(px + (dx / dist) * step), Math.round(py + (dy / dist) * step));
   }, WANDER_TICK_MS);
 }
 
