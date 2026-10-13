@@ -41,14 +41,33 @@ function fmt(sec) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+const modeButtons = [...document.querySelectorAll('.mode-btn')];
+
+function renderMode(mode, running) {
+  for (const btn of modeButtons) {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+    btn.disabled = running;   // 运行中锁定,空闲时可切
+  }
+}
+
+modeButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    if (current.phase !== 'idle') return;
+    window.panelApi.saveSettings({ pomodoroMode: btn.dataset.mode });
+  });
+});
+
 function renderPomodoro(st) {
   current = st;
+  renderMode(st.mode || 'down', st.phase !== 'idle');
   timeDisplay.textContent = fmt(st.remaining);
   timeDisplay.className =
     st.phase === 'work' || st.phase === 'workEnd' ? 'working'
       : st.phase === 'rest' || st.phase === 'restEnd' ? 'resting' : '';
 
-  phaseLabel.textContent = (PHASE_TEXT[st.phase] || '待机中') + (st.paused && st.phase !== 'idle' ? '(已暂停)' : '');
+  let phaseText = PHASE_TEXT[st.phase] || '待机中';
+  if (st.phase === 'work' && st.mode === 'up') phaseText = '正向专注中';
+  phaseLabel.textContent = phaseText + (st.paused && st.phase !== 'idle' ? '(已暂停)' : '');
 
   bindLabel.classList.toggle('hidden', !st.todo);
   if (st.todo) bindLabel.textContent = `🎯 ${st.todo.text}`;

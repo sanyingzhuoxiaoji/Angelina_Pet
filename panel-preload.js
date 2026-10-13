@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('panelApi', {
   pomodoroSkip: () => ipcRenderer.send('panel:pomodoro-skip'),
   pomodoroStop: () => ipcRenderer.send('panel:pomodoro-stop'),
   bindTodo: (todoId) => ipcRenderer.send('panel:bind-todo', todoId),
+  saveSettings: (patch) => ipcRenderer.send('panel:settings-save', patch),
   close: () => ipcRenderer.send('panel:close-panel'),
   // 主进程 → 渲染端
   onPomodoroTick: (cb) => ipcRenderer.on('pomodoro:tick', (_e, st) => cb(st)),

@@ -35,6 +35,7 @@ const SETTINGS_DEFAULTS = {
   springDrag: true,          // 弹簧(柔性)拖动开关,false = v1 的 1:1 跟手
   wanderIdleMin: 1,          // 闲置多少分钟后开始巡游/小动作
   idleCooldownMin: 3,        // 巡游/小动作结束后冷却分钟数(实际 ±1 随机,默认 2~4)
+  pomodoroMode: 'down',      // 番茄钟模式:'down' 倒计时 | 'up' 正向(秒表)
 };
 
 function settingsFile() {
@@ -92,8 +93,10 @@ const MANUAL_FORMS = ['idle', 'work', 'rest', 'restAlt', 'restEnd', 'wander', 'w
 const WORK_END_SEC = 3;   // workEnd/restEnd 提示停留时长
 const pomodoro = {
   phase: 'idle',
-  remaining: 0,            // 秒
+  remaining: 0,            // 秒(down=剩余;up=已专注时长,面板直接显示)
   total: 0,
+  mode: 'down',            // 'down' 倒计时 | 'up' 正向秒表
+  elapsed: 0,              // up 模式已专注秒数
   paused: false,
   timer: null,
   todo: null,              // 绑定的待办 {id, text}(仅记录显示,不写回便签)
@@ -119,6 +122,7 @@ function pushPomodoro() {
     phase: pomodoro.phase,
     remaining: pomodoro.remaining,
     total: pomodoro.total,
+    mode: pomodoro.mode,
     paused: pomodoro.paused,
     completedToday: completedToday(),
     todo: pomodoro.todo,
@@ -129,6 +133,7 @@ function setPhase(phase, remainingSec) {
   pomodoro.phase = phase;
   pomodoro.remaining = remainingSec;
   pomodoro.total = remainingSec;
+  if (phase === 'idle') pomodoro.elapsed = 0;
   pushPomodoro();
   applyPomodoroForm();
 }
@@ -179,7 +184,10 @@ function startPomodoro(todo) {
   stopTicker();
   pomodoro.paused = false;
   pomodoro.todo = todo || null;
-  setPhase('work', settings.pomodoroMin * 60);
+  pomodoro.mode = settings.pomodoroMode === 'up' ? 'up' : 'down';
+  pomodoro.elapsed = 0;
+  // up 模式:remaining 存已专注秒数,从 0 递增,永不自动归零
+  setPhase('work', pomodoro.mode === 'up' ? 0 : settings.pomodoroMin * 60);
   startTicker();
   // 不在放置的位置 → 纸飞机飞回家,落地播报今日完成数(锁形态时不飞,只播报)
   if (!settings.manualForm && settings.petPos) {
@@ -257,6 +265,15 @@ function stopTicker() {
 
 function onTick() {
   if (pomodoro.paused || pomodoro.phase === 'idle') return;
+
+  // 正向模式:递增显示,永不触发归零;完成与否由"停止"时的时长决定
+  if (pomodoro.mode === 'up' && pomodoro.phase === 'work') {
+    pomodoro.elapsed += 1;
+    pomodoro.remaining = pomodoro.elapsed;
+    pushPomodoro();
+    return;
+  }
+
   pomodoro.remaining -= 1;
 
   if (pomodoro.remaining > 0) { pushPomodoro(); return; }
@@ -299,9 +316,12 @@ function pausePomodoro() {
 
 function skipPomodoro() {
   if (pomodoro.phase === 'work') {
-    settings.completedDate = todayStr();
-    settings.completedToday = completedToday() + 1;
-    saveSettings();
+    // 正向模式"跳过"= 提前收工,时长可能不足,不计完成
+    if (pomodoro.mode !== 'up') {
+      settings.completedDate = todayStr();
+      settings.completedToday = completedToday() + 1;
+      saveSettings();
+    }
     setPhase('rest', settings.restMin * 60);
   } else if (pomodoro.phase === 'rest' || pomodoro.phase === 'workEnd') {
     pomodoro.todo = null;
@@ -311,8 +331,20 @@ function skipPomodoro() {
 }
 
 function stopPomodoro() {
+  // 正向模式停止:满一个番茄时长算完成,走完成→休息流程;不足则静默回空闲
+  if (pomodoro.mode === 'up' && pomodoro.phase === 'work' && pomodoro.elapsed >= settings.pomodoroMin * 60) {
+    settings.completedDate = todayStr();
+    settings.completedToday = completedToday() + 1;
+    saveSettings();
+    notify('正向专注完成!', `专注了 ${Math.round(pomodoro.elapsed / 60)} 分钟,休息一下吧~`);
+    showBubble(pick('workEnd'));
+    setPhase('workEnd', WORK_END_SEC);
+    return;
+  }
   pomodoro.todo = null;
+  pomodoro.mode = settings.pomodoroMode === 'up' ? 'up' : 'down';
   pomodoro.paused = false;
+  pomodoro.elapsed = 0;
   setPhase('idle', 0);
   stopTicker();
 }
@@ -625,6 +657,7 @@ function publicSettings() {
   return {
     pomodoroMin: settings.pomodoroMin,
     restMin: settings.restMin,
+    pomodoroMode: settings.pomodoroMode === 'up' ? 'up' : 'down',
     sedentaryMin: settings.sedentaryMin,
     sedentaryOn: settings.sedentaryOn,
     wanderOn: settings.wanderOn,
@@ -1047,6 +1080,7 @@ function applySettingsPatch(patch) {
   if (patch) {
     settings.pomodoroMin = num(patch.pomodoroMin, 1, 180, settings.pomodoroMin);
     settings.restMin = num(patch.restMin, 1, 60, settings.restMin);
+    if (patch.pomodoroMode === 'down' || patch.pomodoroMode === 'up') settings.pomodoroMode = patch.pomodoroMode;
     settings.sedentaryMin = num(patch.sedentaryMin, 5, 240, settings.sedentaryMin);
     settings.sedentaryOn = !!patch.sedentaryOn;
     // 仅在提供时覆盖(面板的保存请求不含这些字段,避免被重置)
