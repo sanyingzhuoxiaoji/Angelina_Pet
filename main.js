@@ -605,7 +605,7 @@ function syncTimerPos(px, py) {
   if (!petWin || petWin.isDestroyed()) return;
   if (px === undefined || py === undefined) { [px, py] = petWin.getPosition(); }
   timerWin.setBounds({
-    x: Math.round(px) - TIMER_W - 6,
+    x: Math.round(px) + Math.round((PET_SIZE - TIMER_W) / 2),
     y: Math.round(py) + 320,
     width: TIMER_W,
     height: TIMER_H,
