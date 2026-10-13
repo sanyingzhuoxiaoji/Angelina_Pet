@@ -169,132 +169,205 @@ h2.chapter img { height: 22px; }
 
 .panel-frame { width: 320px; height: 480px; border-radius: 10px; overflow: hidden; position: relative; }
 
-/* ---- 面板 1:手账风 ---- */
-.p-journal {
+/* ---- 面板通用小件 ---- */
+.digits {
+  font-family: 'Baloo 2', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 面板 A:安洁莉娜的日记 ---- */
+.pa {
   background:
     radial-gradient(circle, rgba(74,59,50,.05) 1px, transparent 1.5px) 0 0/14px 14px,
     var(--paper);
   border: 2px solid var(--ink);
   display: flex; flex-direction: column;
-  font-size: 13px; position: relative;
+  font-size: 13px; position: relative; overflow: hidden;
 }
-.p-journal::before {  /* 猫耳涂鸦 */
-  content: ''; position: absolute; top: -4px; right: 14px;
-  width: 60px; height: 30px;
-  background: url('../Angelina/UI素材/12.png') no-repeat center / contain;
+.pa-sweet {   /* 右侧竖排 Sweet 装饰条(素材2) */
+  position: absolute; right: 6px; top: 96px;
+  width: 26px; height: 150px;
+  background: url('../Angelina/UI素材/2.png') no-repeat center / contain;
+  opacity: .85;
+  pointer-events: none;
 }
-.pj-title {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 12px 8px;
-  border-bottom: 2px dashed var(--ink);
-  font-family: 'ZCOOL KuaiLe', sans-serif; font-size: 16px;
+.pa-title { padding: 12px 14px 6px; text-align: center; position: relative; }
+.pa-title .diary { height: 34px; }               /* 素材13 angelina's diary */
+.pa-title .zh {
+  font-family: 'ZCOOL KuaiLe', sans-serif; font-size: 11px;
+  opacity: .55; margin-top: 2px;
 }
-.pj-title .journey { height: 16px; opacity: .9; }
-.pj-body { padding: 10px 14px; display: flex; flex-direction: column; flex: 1; min-height: 0; }
-.pj-mode { display: flex; gap: 6px; justify-content: center; }
-.pj-mode span {
+.pa-body { padding: 4px 16px 12px; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.pa-mode { display: flex; gap: 6px; justify-content: center; }
+.pa-mode span {
   border: 1.5px solid var(--ink); border-radius: 14px;
   padding: 2px 14px; font-size: 12px; font-family: 'ZCOOL KuaiLe', sans-serif;
   background: #fff;
 }
-.pj-mode span.on { background: var(--ink); color: var(--paper); }
-.pj-time { text-align: center; margin: 8px 0 2px; position: relative; }
-.pj-time .digits {
-  font-family: 'Baloo 2', monospace;
-  font-size: 56px; font-weight: 800; color: var(--accent);
-  font-variant-numeric: tabular-nums; line-height: 1;
+.pa-mode span.on { background: var(--ink); color: var(--paper); }
+.pa-time { text-align: center; margin: 6px 0 0; }
+.pa-time .digits {
+  font-size: 52px; font-weight: 800; color: var(--accent); line-height: 1;
 }
-.p-journal.is-rest .pj-time .digits { color: var(--teal); }
-.pj-time .sub { font-size: 12px; font-family: 'ZCOOL KuaiLe', sans-serif; color: var(--accent); margin-top: 2px; }
-.p-journal.is-rest .pj-time .sub { color: var(--teal); }
-.pj-duration { display: flex; justify-content: center; gap: 14px; font-size: 12px; margin: 4px 0; }
-.pj-duration input {
+.pa.is-rest .pa-time .digits { color: var(--teal); }
+.pa-dialog {   /* 素材12:猫耳 *Dialog* 涂鸦框,阶段文字叠在框心 */
+  position: relative; width: 150px; height: 62px;
+  margin: 2px auto 0;
+  background: url('../Angelina/UI素材/12.png') no-repeat center / contain;
+  display: flex; align-items: center; justify-content: center;
+}
+.pa-dialog .phase {
+  font-family: 'ZCOOL KuaiLe', sans-serif; font-size: 13px;
+  color: var(--ink); padding-top: 10px;
+}
+.pa-rabbits {   /* 素材19:跑步兔子四帧,随秒轮播 */
+  width: 132px; height: 38px; margin: 4px auto 0;
+  background: url('../Angelina/UI素材/19.png') no-repeat 0 0 / 400% 100%;
+  animation: rabbit-run .8s steps(4) infinite;
+}
+.pa.is-rest .pa-rabbits {
+  background: url('../Angelina/UI素材/20.png') no-repeat center / contain;
+  animation: none;
+}
+@keyframes rabbit-run {
+  from { background-position: 0 0; }
+  to   { background-position: -400% 0; }
+}
+.pa-duration { display: flex; justify-content: center; gap: 14px; font-size: 12px; margin: 4px 0; }
+.pa-duration input {
   width: 44px; border: 1.5px solid var(--line); border-radius: 6px;
   padding: 1px 4px; font-size: 12px; color: var(--ink); background: #fff;
   font-family: inherit;
 }
-.pj-btns { display: flex; justify-content: center; gap: 8px; margin: 8px 0; }
-.pj-btns button {
+.pa-btns { display: flex; justify-content: center; gap: 8px; margin: 6px 0; }
+.pa-btns button {
   font-family: 'ZCOOL KuaiLe', sans-serif; font-size: 13px;
   border: 1.5px solid var(--ink); border-radius: 16px;
   background: #fff; color: var(--ink); padding: 4px 16px; cursor: pointer;
   box-shadow: 2px 2px 0 rgba(74,59,50,.25);
 }
-.pj-btns button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-.pj-done { text-align: center; font-size: 12px; margin-bottom: 6px; font-family: 'ZCOOL KuaiLe', sans-serif; }
-.pj-todos { flex: 1; min-height: 0; overflow: hidden; border-top: 2px dashed var(--ink); padding-top: 8px; }
-.pj-todos .cap { font-size: 12px; font-family: 'ZCOOL KuaiLe', sans-serif; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-.pj-todos .cap img { height: 14px; }
-.pj-note {
+.pa-btns button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pa-done {
+  text-align: center; font-size: 12px; margin-bottom: 6px;
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.pa-done img { height: 16px; }                   /* 素材21 橙片星星 */
+.pa-todos { flex: 1; min-height: 0; overflow: hidden; border-top: 2px dashed var(--ink); padding-top: 8px; }
+.pa-todos .cap {
+  font-size: 12px; font-family: 'ZCOOL KuaiLe', sans-serif;
+  margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+}
+.pa-todos .cap img { height: 16px; }             /* 素材7 信封 */
+.pa-note {
   background: #fff9c9; border: 1px solid #e8d98a;
   border-radius: 4px; padding: 5px 8px; font-size: 12px;
   margin-bottom: 5px; transform: rotate(-.6deg);
   box-shadow: 1px 2px 3px rgba(74,59,50,.12);
   display: flex; justify-content: space-between; align-items: center; gap: 6px;
 }
-.pj-note:nth-child(odd) { transform: rotate(.5deg); background: #e4f3ec; border-color: #bcd9cd; }
-.pj-note .tomato { flex-shrink: 0; font-size: 11px; color: var(--accent); }
+.pa-note:nth-child(odd) { transform: rotate(.5deg); background: #e4f3ec; border-color: #bcd9cd; }
+.pa-note .tomato { flex-shrink: 0; font-size: 11px; color: var(--accent); }
+.pa-kaomoji {   /* 素材8:颜文字彩蛋 */
+  text-align: center; opacity: .5; font-size: 11px;
+  margin-top: 4px; font-family: 'Baloo 2', monospace;
+}
 
-/* ---- 面板 2:软糖卡片风 ---- */
-.p-candy {
-  background: linear-gradient(160deg, #fff 0%, var(--paper) 100%);
-  box-shadow: 0 10px 30px rgba(74,59,50,.18), 0 0 0 1px var(--line);
+/* ---- 面板 B:酸橙汽水 ---- */
+.pb {
+  background: #fff;
   display: flex; flex-direction: column;
-  font-size: 13px;
+  font-size: 13px; overflow: hidden;
 }
-.pc-head {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 12px 0 10px;
-  font-family: 'ZCOOL KuaiLe', sans-serif; font-size: 16px;
-  background: linear-gradient(135deg, var(--accent-soft), var(--accent));
-  color: #fff; position: relative;
+.pb-head {
+  position: relative; height: 86px; flex-shrink: 0;
+  background: #2b2622 url('../Angelina/UI素材/22.png') center / cover;
+  display: flex; align-items: center; justify-content: center;
 }
-.pc-head .flower { height: 20px; position: absolute; right: 12px; top: 8px; }
-.pc-body { padding: 12px 16px; display: flex; flex-direction: column; flex: 1; min-height: 0; }
-.pc-mode { display: flex; background: #f1e8de; border-radius: 20px; padding: 3px; }
-.pc-mode span {
+.pb-head::before { content: ''; position: absolute; inset: 0; background: rgba(43,38,34,.35); }
+.pb-head .logo { height: 44px; position: relative; }   /* 素材10 白色活动logo */
+.pb-body { padding: 10px 16px 12px; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.pb-mode { display: flex; background: #f1e8de; border-radius: 20px; padding: 3px; }
+.pb-mode span {
   flex: 1; text-align: center; border-radius: 16px; padding: 4px 0;
-  font-size: 12px; color: var(--ink); cursor: default;
+  font-size: 12px; color: var(--ink);
 }
-.pc-mode span.on { background: #fff; color: var(--accent); font-weight: bold; box-shadow: 0 2px 6px rgba(74,59,50,.15); }
-.pc-main { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 14px 0 4px; }
-.pc-ring { position: relative; width: 92px; height: 92px; }
-.pc-ring svg { transform: rotate(-90deg); }
-.pc-ring .ring-bg { stroke: #f1e8de; }
-.pc-ring .ring-fg { stroke: var(--accent); transition: stroke-dashoffset .5s linear, stroke .4s; }
-.p-candy.is-rest .pc-ring .ring-fg { stroke: var(--teal); }
-.pc-ring .digits {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-family: 'Baloo 2', monospace; font-size: 23px; font-weight: 800;
-  color: var(--ink); font-variant-numeric: tabular-nums;
+.pb-mode span.on { background: #fff; color: var(--accent); font-weight: bold; box-shadow: 0 2px 6px rgba(74,59,50,.15); }
+.pb-main { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 10px 0 4px; }
+.pb-star {   /* 素材21:橙色星星,数字叠在上面 */
+  position: relative; width: 110px; height: 110px;
+  background: url('../Angelina/UI素材/21.png') no-repeat center / contain;
+  display: flex; align-items: center; justify-content: center;
 }
-.pc-side { font-size: 12px; line-height: 1.9; }
-.pc-side .phase { font-family: 'ZCOOL KuaiLe', sans-serif; font-size: 15px; color: var(--accent); }
-.p-candy.is-rest .pc-side .phase { color: var(--teal); }
-.pc-side .dur { display: flex; align-items: center; gap: 4px; color: var(--ink); }
-.pc-side input {
+.pb-star .digits {
+  font-size: 24px; font-weight: 800; color: var(--ink);
+  padding-top: 6px; text-shadow: 0 1px 2px rgba(255,255,255,.7);
+}
+.pb-side { font-size: 12px; line-height: 1.9; }
+.pb-side .phase { font-family: 'ZCOOL KuaiLe', sans-serif; font-size: 15px; color: var(--accent); }
+.pb.is-rest .pb-side .phase { color: var(--teal); }
+.pb-side .dur { display: flex; align-items: center; gap: 4px; color: var(--ink); }
+.pb-side input {
   width: 40px; border: 1px solid var(--line); border-radius: 6px;
   padding: 1px 3px; font-size: 12px; color: var(--ink); background: #fff;
 }
-.pc-done { font-size: 12px; opacity: .75; }
-.pc-btns { display: flex; gap: 8px; justify-content: center; margin: 10px 0; }
-.pc-btns button {
-  border: none; border-radius: 18px; padding: 6px 20px;
+.pb-btns { display: flex; gap: 8px; justify-content: center; margin: 8px 0; }
+.pb-btns button {
+  border: none; border-radius: 18px; padding: 6px 18px;
   font-size: 13px; cursor: pointer; font-family: inherit;
   background: #f1e8de; color: var(--ink);
   box-shadow: 0 3px 8px rgba(74,59,50,.15);
 }
-.pc-btns button.primary { background: linear-gradient(135deg, var(--accent-soft), var(--accent)); color: #fff; }
-.pc-todos { flex: 1; min-height: 0; border-top: 1.5px solid var(--line); padding-top: 8px; }
-.pc-todos .cap { font-size: 12px; font-weight: bold; margin-bottom: 6px; display: flex; gap: 6px; align-items: center; }
-.pc-todos .cap img { height: 14px; }
-.pc-item {
+.pb-btns button.primary { background: linear-gradient(135deg, var(--accent-soft), var(--accent)); color: #fff; }
+.pb-todos { flex: 1; min-height: 0; border-top: 1.5px solid var(--line); padding-top: 8px; }
+.pb-todos .cap { font-size: 12px; font-weight: bold; margin-bottom: 6px; display: flex; gap: 6px; align-items: center; }
+.pb-todos .cap img { height: 16px; }             /* 素材7 信封 */
+.pb-item {
   background: #fff; border: 1px solid var(--line); border-radius: 10px;
   padding: 6px 10px; font-size: 12px; margin-bottom: 5px;
   display: flex; justify-content: space-between; align-items: center; gap: 6px;
   box-shadow: 0 2px 5px rgba(74,59,50,.06);
 }
-.pc-item .tomato { color: var(--accent); font-size: 11px; flex-shrink: 0; }
+.pb-item .tomato { color: var(--accent); font-size: 11px; flex-shrink: 0; }
+
+/* ---- 面板 C:混搭小样 ---- */
+.pc {
+  background:
+    radial-gradient(circle, rgba(74,59,50,.05) 1px, transparent 1.5px) 0 0/14px 14px,
+    var(--paper);
+  border: 2px solid var(--ink);
+  display: flex; flex-direction: column;
+  font-size: 13px; overflow: hidden; position: relative;
+}
+.pc-head {
+  position: relative; height: 64px; flex-shrink: 0;
+  background: #2b2622 url('../Angelina/UI素材/22.png') center / cover;
+  display: flex; align-items: center; justify-content: center;
+}
+.pc-head::before { content: ''; position: absolute; inset: 0; background: rgba(43,38,34,.35); }
+.pc-head .logo { height: 34px; position: relative; }
+.pc-body { padding: 8px 16px 12px; display: flex; flex-direction: column; flex: 1; min-height: 0; position: relative; }
+.pc-sweet {   /* 素材2 Sweet 侧条 */
+  position: absolute; right: 4px; top: 10px;
+  width: 24px; height: 140px;
+  background: url('../Angelina/UI素材/2.png') no-repeat center / contain;
+  opacity: .8; pointer-events: none;
+}
+.pc-timechip {   /* 与主窗口计时同款:手账纸片 */
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin: 6px auto 2px;
+  background: var(--paper); border: 2px dashed var(--ink); border-radius: 12px;
+  padding: 8px 18px; transform: rotate(-1.5deg);
+  box-shadow: 3px 4px 0 rgba(74,59,50,.18);
+  width: fit-content;
+}
+.pc-timechip .digits { font-size: 34px; font-weight: 800; color: var(--accent); line-height: 1; }
+.pc.is-rest .pc-timechip .digits { color: var(--teal); }
+.pc-timechip .phase {
+  font-family: 'ZCOOL KuaiLe', sans-serif; font-size: 12px;
+  color: var(--accent); letter-spacing: 2px;
+}
+.pc.is-rest .pc-timechip .phase { color: var(--teal); }
 
 /* ---------- 底部集成映射 ---------- */
 .footer-note {
@@ -326,94 +399,120 @@ h2.chapter img { height: 22px; }
 
 <!-- 模板行由 JS 生成,避免手写重复 -->
 
-<h2 class="chapter">面板 · 2 个方案(320×480 实际尺寸)</h2>
+<h2 class="chapter">面板 · 3 个方案(320×480 实际尺寸,深度使用 UI素材)</h2>
 <div class="desc">保留现有全部功能:模式切换、时长修改、阶段时间、今日完成、待办绑定、开始/暂停/跳过/停止。</div>
 <div class="panel-row">
 
-  <!-- 面板 1:手账风 -->
+  <!-- 面板 A:安洁莉娜的日记 -->
   <div>
-    <div class="panel-frame p-journal" id="panel-journal">
-      <div class="pj-title">
-        ⏳ 安洁莉娜的番茄钟
-        <img class="journey" src="../Angelina/UI素材/15.png" alt="">
+    <div class="panel-frame pa" id="panel-a">
+      <div class="pa-sweet"></div>
+      <div class="pa-title">
+        <img class="diary" src="../Angelina/UI素材/13.png" alt="angelina's diary">
+        <div class="zh">⏳ 安洁莉娜的番茄钟</div>
       </div>
-      <div class="pj-body">
-        <div class="pj-mode"><span class="on" data-m="down">倒计时</span><span data-m="up">正向</span></div>
-        <div class="pj-time">
-          <div class="digits" data-timer-text>25:00</div>
-          <div class="sub" data-phase-text>专注工作中</div>
-        </div>
-        <div class="pj-duration">
+      <div class="pa-body">
+        <div class="pa-mode"><span class="on" data-m="down">倒计时</span><span data-m="up">正向</span></div>
+        <div class="pa-time"><div class="digits" data-timer-text>25:00</div></div>
+        <div class="pa-dialog"><div class="phase" data-phase-text>专注工作中</div></div>
+        <div class="pa-rabbits"></div>
+        <div class="pa-duration">
           <label>番茄 <input value="25"> 分</label>
           <label>休息 <input value="5"> 分</label>
         </div>
-        <div class="pj-btns">
+        <div class="pa-btns">
           <button class="primary">开始</button>
           <button>跳过</button>
           <button>停止</button>
         </div>
-        <div class="pj-done">今日完成 🍅 × 2</div>
-        <div class="pj-todos">
-          <div class="cap"><img src="../Angelina/UI素材/27.png" alt=""> 今日待办 · 点击绑定</div>
-          <div class="pj-note"><span>写周报</span><span class="tomato">🍅 目标</span></div>
-          <div class="pj-note"><span>复习高中英语单词</span><span class="tomato">🍅</span></div>
-          <div class="pj-note"><span>刷头发(买护发素!!)</span></div>
+        <div class="pa-done">今日完成 🍅 × 2 <img src="../Angelina/UI素材/21.png" alt=""></div>
+        <div class="pa-todos">
+          <div class="cap"><img src="../Angelina/UI素材/7.png" alt=""> 今日待办 · 点击绑定</div>
+          <div class="pa-note"><span>写周报</span><span class="tomato">🍅 目标</span></div>
+          <div class="pa-note"><span>复习高中英语单词</span><span class="tomato">🍅</span></div>
+          <div class="pa-note"><span>刷头发(买护发素!!)</span></div>
+          <div class="pa-kaomoji">(*´∀`*) Route 0 ~</div>
         </div>
       </div>
     </div>
-    <div class="label" style="text-align:center;margin-top:8px;font-size:12px;color:#9c8f83;">方案 1 · 手账风:米纸+虚线+便利贴待办+涂鸦装饰</div>
+    <div class="label" style="text-align:center;margin-top:8px;font-size:12px;color:#9c8f83;">方案 A · 安洁莉娜的日记:diary 手写标题 + Dialog 框 + 跑步兔子 + Sweet 侧条</div>
   </div>
 
-  <!-- 面板 2:软糖卡片风 -->
+  <!-- 面板 B:酸橙汽水 -->
   <div>
-    <div class="panel-frame p-candy" id="panel-candy">
-      <div class="pc-head">
-        ⏳ 安洁莉娜的番茄钟
-        <img class="flower" src="../Angelina/UI素材/24.png" alt="">
+    <div class="panel-frame pb" id="panel-b">
+      <div class="pb-head">
+        <img class="logo" src="../Angelina/UI素材/10.png" alt="">
       </div>
-      <div class="pc-body">
-        <div class="pc-mode"><span class="on" data-m="down">倒计时</span><span data-m="up">正向</span></div>
-        <div class="pc-main">
-          <div class="pc-ring">
-            <svg width="92" height="92">
-              <circle class="ring-bg" cx="46" cy="46" r="40" fill="none" stroke-width="8"></circle>
-              <circle class="ring-fg ring-demo" cx="46" cy="46" r="40" fill="none" stroke-width="8"
-                      stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="0"></circle>
-            </svg>
-            <div class="digits" data-timer-text>25:00</div>
-          </div>
-          <div class="pc-side">
+      <div class="pb-body">
+        <div class="pb-mode"><span class="on" data-m="down">倒计时</span><span data-m="up">正向</span></div>
+        <div class="pb-main">
+          <div class="pb-star"><div class="digits" data-timer-text>25:00</div></div>
+          <div class="pb-side">
             <div class="phase" data-phase-text>专注工作中</div>
             <div class="dur">番茄 <input value="25"> 分<br>休息 <input value="5"> 分</div>
-            <div class="pc-done">今日完成 🍅 × 2</div>
+            <div>今日完成 🍅 × 2</div>
           </div>
         </div>
-        <div class="pc-btns">
+        <div class="pb-btns">
           <button class="primary">开始</button>
           <button>暂停</button>
           <button>跳过</button>
           <button>停止</button>
         </div>
-        <div class="pc-todos">
-          <div class="cap"><img src="../Angelina/UI素材/20.png" alt=""> 待办 · 点击绑定</div>
-          <div class="pc-item"><span>写周报</span><span class="tomato">🍅 目标</span></div>
-          <div class="pc-item"><span>复习高中英语单词</span><span class="tomato">🍅</span></div>
-          <div class="pc-item"><span>刷头发(买护发素!!)</span></div>
+        <div class="pb-todos">
+          <div class="cap"><img src="../Angelina/UI素材/7.png" alt=""> 待办 · 点击绑定</div>
+          <div class="pb-item"><span>写周报</span><span class="tomato">🍅 目标</span></div>
+          <div class="pb-item"><span>复习高中英语单词</span><span class="tomato">🍅</span></div>
+          <div class="pb-item"><span>刷头发(买护发素!!)</span></div>
         </div>
       </div>
     </div>
-    <div class="label" style="text-align:center;margin-top:8px;font-size:12px;color:#9c8f83;">方案 2 · 软糖卡片风:渐变标题+环形进度+圆润卡片待办</div>
+    <div class="label" style="text-align:center;margin-top:8px;font-size:12px;color:#9c8f83;">方案 B · 酸橙汽水:星星雨横幅 + 活动 logo + 数字叠橙星</div>
+  </div>
+
+  <!-- 面板 C:混搭小样 -->
+  <div>
+    <div class="panel-frame pc" id="panel-c">
+      <div class="pc-head"><img class="logo" src="../Angelina/UI素材/10.png" alt=""></div>
+      <div class="pc-body">
+        <div class="pc-sweet"></div>
+        <div class="pa-mode"><span class="on" data-m="down">倒计时</span><span data-m="up">正向</span></div>
+        <div class="pc-timechip">
+          <div class="digits" data-timer-text>25:00</div>
+          <div class="phase" data-phase-text data-en="1">FOCUS</div>
+        </div>
+        <div class="pa-duration">
+          <label>番茄 <input value="25"> 分</label>
+          <label>休息 <input value="5"> 分</label>
+        </div>
+        <div class="pa-btns">
+          <button class="primary">开始</button>
+          <button>跳过</button>
+          <button>停止</button>
+        </div>
+        <div class="pa-done">今日完成 🍅 × 2</div>
+        <div class="pa-todos">
+          <div class="cap"><img src="../Angelina/UI素材/7.png" alt=""> 今日待办 · 点击绑定</div>
+          <div class="pa-note"><span>写周报</span><span class="tomato">🍅 目标</span></div>
+          <div class="pa-note"><span>复习高中英语单词</span><span class="tomato">🍅</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="label" style="text-align:center;margin-top:8px;font-size:12px;color:#9c8f83;">方案 C · 混搭:星星雨头 + 日记米纸身 + 与主窗计时同款纸片</div>
   </div>
 
   <div class="panel-note">
-    <b>两案共同点</b><br>
-    · 站酷快乐体(标题/按钮/阶段文案)+ Baloo 2(数字,圆滚滚)<br>
-    · 待办点击 = 绑定为本轮目标(🍅 标记)<br>
-    · 功能与现版完全一致,只换视觉<br><br>
-    <b>差异</b><br>
-    · 手账风:信息密度高一些,涂鸦装饰多,和 UI素材 的白色手绘感一脉相承<br>
-    · 软糖卡片风:更现代干净,环形进度一眼看清剩余比例<br><br>
-    <b>可混搭</b>:比如"软糖的环形进度 + 手账的便利贴待办",告诉我即可
+    <b>素材使用一览</b><br>
+    · 13 diary 手写标题(A)<br>
+    · 12 Dialog 猫耳框 → 阶段文字(A)<br>
+    · 19 跑步兔子四帧 → 专注时轮播(A);休息换 20 跳跃兔<br>
+    · 2 Sweet 竖条 → 右侧边饰(A/C)<br>
+    · 22 星星雨 + 10 白色活动logo → 头部横幅(B/C)<br>
+    · 21 橙色星星 → 数字底座(B);完成数旁点缀(A)<br>
+    · 7 信封 → 待办区块图标(A/B/C)<br>
+    · 8 颜文字 → 底部彩蛋(A)<br><br>
+    <b>可微调</b>:元素位置/大小/去留都能改,比如"兔子太闹了去掉""Sweet 换到左边"
   </div>
 </div>
 
@@ -501,11 +600,14 @@ function renderAll() {
   document.querySelectorAll('.t-minimal, .t-journal, .t-pill, .t-ring').forEach((el) => {
     el.classList.toggle('is-rest', isRest);
   });
-  document.getElementById('panel-journal').classList.toggle('is-rest', isRest);
-  document.getElementById('panel-candy').classList.toggle('is-rest', isRest);
+  document.getElementById('panel-a').classList.toggle('is-rest', isRest);
+  document.getElementById('panel-b').classList.toggle('is-rest', isRest);
+  document.getElementById('panel-c').classList.toggle('is-rest', isRest);
 
   document.querySelectorAll('[data-phase-text]').forEach((el) => {
-    el.textContent = isRest ? '休息中' : (state.mode === 'up' ? '正向专注中' : '专注工作中');
+    el.textContent = el.dataset.en === '1'
+      ? (isRest ? 'BREAK' : 'FOCUS')
+      : (isRest ? '休息中' : (state.mode === 'up' ? '正向专注中' : '专注工作中'));
   });
 
   // 环形进度:剩余比例(down)/ 已进行比例(up)
