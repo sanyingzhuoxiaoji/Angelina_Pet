@@ -22,18 +22,17 @@ html, body {
   box-shadow: 3px 4px 0 rgba(74, 59, 50, .18);
 }
 
-/* 素材20 跳跃兔子贴纸(白色,压在深棕小底上) */
+/* 素材21 橙色星星贴纸(自带颜色,米纸上清晰) */
 #chip::after {
   content: '';
   position: absolute;
-  top: -16px;
-  right: -18px;
-  width: 40px;
-  height: 22px;
-  background: #2b2622 url('Angelina/UI素材/20.png') no-repeat center / 52% auto;
-  border-radius: 6px;
-  transform: rotate(12deg);
-  box-shadow: 1px 2px 4px rgba(0, 0, 0, .3);
+  top: -14px;
+  right: -12px;
+  width: 32px;
+  height: 28px;
+  background: url('Angelina/UI素材/21.png') no-repeat center / contain;
+  transform: rotate(14deg);
+  filter: drop-shadow(1px 2px 2px rgba(74, 59, 50, .3));
 }
 
 #tag {

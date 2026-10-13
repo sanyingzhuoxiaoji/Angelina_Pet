@@ -606,7 +606,7 @@ function syncTimerPos(px, py) {
   if (px === undefined || py === undefined) { [px, py] = petWin.getPosition(); }
   timerWin.setBounds({
     x: Math.round(px) - TIMER_W - 6,
-    y: Math.round(py) + 100,
+    y: Math.round(py) + 170,
     width: TIMER_W,
     height: TIMER_H,
   });
@@ -1146,6 +1146,19 @@ function applySettingsPatch(patch) {
     settings.pomodoroMin = num(patch.pomodoroMin, 1, 180, settings.pomodoroMin);
     settings.restMin = num(patch.restMin, 1, 60, settings.restMin);
     if (patch.pomodoroMode === 'down' || patch.pomodoroMode === 'up') settings.pomodoroMode = patch.pomodoroMode;
+    // 工作阶段中切换模式:换算已专注时长,专注进度无缝保留
+    if (settings.pomodoroMode !== pomodoro.mode && pomodoro.phase === 'work') {
+      if (settings.pomodoroMode === 'up') {
+        // 倒计时 → 正向:已专注 = 总长 - 剩余
+        pomodoro.elapsed = Math.max(0, pomodoro.total - pomodoro.remaining);
+        pomodoro.remaining = pomodoro.elapsed;
+      } else {
+        // 正向 → 倒计时:剩余 = 设定时长 - 已专注(已超时则留 1 秒,下一拍走完成)
+        pomodoro.total = settings.pomodoroMin * 60;
+        pomodoro.remaining = Math.max(1, pomodoro.total - pomodoro.elapsed);
+      }
+      pomodoro.mode = settings.pomodoroMode;
+    }
     settings.sedentaryMin = num(patch.sedentaryMin, 5, 240, settings.sedentaryMin);
     // 仅在显式提供时覆盖(面板的部分保存不含这些字段,避免被误重置)
     if (typeof patch.sedentaryOn === 'boolean') settings.sedentaryOn = patch.sedentaryOn;

@@ -48,7 +48,6 @@ function fmt(sec) {
 function renderMode(mode, running) {
   for (const btn of modeButtons) {
     btn.classList.toggle('active', btn.dataset.mode === mode);
-    btn.disabled = running;   // 运行中锁定,空闲时可切
   }
 }
 
@@ -132,6 +131,13 @@ btnStart.addEventListener('click', () => {
 });
 btnSkip.addEventListener('click', () => window.panelApi.pomodoroSkip());
 btnStop.addEventListener('click', () => window.panelApi.pomodoroStop());
+
+// 模式切换(任意时刻可切,运行中由主进程换算已专注时长)
+modeButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    window.panelApi.saveSettings({ pomodoroMode: btn.dataset.mode });
+  });
+});
 
 // 时长修改(空闲时可改,change 即保存)
 setPomodoro.addEventListener('change', () => {
