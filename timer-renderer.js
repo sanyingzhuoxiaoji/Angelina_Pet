@@ -1,6 +1,8 @@
-// 计时小窗渲染端:显示 MM:SS,工作橘红/休息青绿
+// 计时小窗渲染端:手账纸片显示 MM:SS,FOCUS/BREAK 标签,工作橘红/休息青绿
 'use strict';
 
+const chip = document.getElementById('chip');
+const tag = document.getElementById('tag');
 const el = document.getElementById('timer-text');
 
 function fmt(sec) {
@@ -11,8 +13,10 @@ function fmt(sec) {
 
 window.timerApi.onPomodoroTick((st) => {
   const running = st.phase !== 'idle';
-  el.style.display = running ? 'flex' : 'none';
+  chip.style.display = running ? 'block' : 'none';
   if (!running) return;
   el.textContent = fmt(st.remaining);
-  el.className = ['rest', 'restEnd'].includes(st.phase) ? 'resting' : '';
+  const isRest = ['rest', 'restEnd'].includes(st.phase);
+  chip.classList.toggle('resting', isRest);
+  tag.textContent = isRest ? 'BREAK' : 'FOCUS';
 });

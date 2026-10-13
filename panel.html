@@ -2,43 +2,59 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="script-src 'self'; img-src 'self' data:; style-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:">
   <title>安洁莉娜面板</title>
+  <link rel="stylesheet" href="fonts/fonts.css">
   <link rel="stylesheet" href="panel.css">
 </head>
 <body>
+  <!-- 头部:星星雨横幅 + 活动logo(可拖动窗口) -->
   <header id="titlebar">
-    <span class="title">⏳ 安洁莉娜的番茄钟</span>
+    <img id="logo" src="Angelina/UI素材/10.png" alt="">
   </header>
 
-  <!-- 番茄钟 -->
-  <section id="timer-section">
+  <main id="body">
+    <!-- 模式切换 -->
     <div id="mode-switch">
       <button class="mode-btn" data-mode="down">倒计时</button>
       <button class="mode-btn" data-mode="up">正向</button>
     </div>
-    <div id="phase-label">待机中</div>
-    <div id="time-display">25:00</div>
-    <div id="bind-label" class="hidden"></div>
+
+    <!-- 计时纸片 -->
+    <div id="timechip">
+      <div id="time-digit" data-timer-text>25:00</div>
+      <div id="phase-chip">
+        <span id="phase-text">FOCUS</span>
+      </div>
+    </div>
+
+    <!-- 时长 -->
+    <div id="duration-row">
+      <label>番茄 <input id="set-pomodoro" type="number" min="1" max="180"> 分</label>
+      <label>休息 <input id="set-rest" type="number" min="1" max="60"> 分</label>
+    </div>
+
+    <!-- 控制 -->
     <div id="timer-controls">
       <button id="btn-start" class="primary">开始</button>
       <button id="btn-skip">跳过</button>
       <button id="btn-stop">停止</button>
     </div>
+
     <div id="completed-label">今日完成 🍅 × 0</div>
-    <div class="duration-row">
-      <label>番茄 <input id="set-pomodoro" type="number" min="1" max="180"> 分</label>
-      <label>休息 <input id="set-rest" type="number" min="1" max="60"> 分</label>
-    </div>
-  </section>
 
-  <!-- 待办(只读,来自桌面便签) -->
-  <section id="todo-section">
-    <div class="section-title">📋 待办(来自桌面便签 · 点击绑定)</div>
-    <ul id="todo-list"></ul>
-    <div id="todo-empty" class="empty hidden"></div>
-  </section>
-
+    <!-- 待办(只读,来自桌面便签) -->
+    <section id="todo-section">
+      <div id="todo-cap">
+        <img src="Angelina/UI素材/7.png" alt="">
+        <span>待办 · 点击绑定</span>
+        <span id="bind-hint" class="hidden">🎯 已绑定</span>
+      </div>
+      <ul id="todo-list"></ul>
+      <div id="todo-empty" class="empty hidden"></div>
+      <div id="kaomoji">(*´∀`*) Route 0 ~</div>
+    </section>
+  </main>
   <script src="panel-renderer.js"></script>
 </body>
 </html>

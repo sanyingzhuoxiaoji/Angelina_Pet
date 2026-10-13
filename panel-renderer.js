@@ -2,9 +2,8 @@
 'use strict';
 
 const $ = (id) => document.getElementById(id);
-const timeDisplay = $('time-display');
-const phaseLabel = $('phase-label');
-const bindLabel = $('bind-label');
+const timeDigit = $('time-digit');
+const phaseText = $('phase-text');
 const completedLabel = $('completed-label');
 const btnStart = $('btn-start');
 const btnSkip = $('btn-skip');
@@ -13,19 +12,23 @@ const todoList = $('todo-list');
 const todoEmpty = $('todo-empty');
 const setPomodoro = $('set-pomodoro');
 const setRest = $('set-rest');
+const bindHint = $('bind-hint');
+const timechip = document.getElementById('timechip');
+const modeButtons = [...document.querySelectorAll('.mode-btn')];
 
 const PHASE_TEXT = {
-  idle: '待机中',
-  work: '专注工作中',
-  workEnd: '干得漂亮!',
-  rest: '休息中',
-  restEnd: '休息结束,准备继续~',
+  idle: '',
+  work: 'FOCUS',
+  workEnd: 'DONE!',
+  rest: 'BREAK',
+  restEnd: 'GO!',
 };
 
 let current = {
   phase: 'idle',
-  remaining: 25 * 60,
-  total: 25 * 60,
+  remaining: 0,
+  total: 0,
+  mode: 'down',
   paused: false,
   completedToday: 0,
   todo: null,
@@ -42,8 +45,6 @@ function fmt(sec) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-const modeButtons = [...document.querySelectorAll('.mode-btn')];
-
 function renderMode(mode, running) {
   for (const btn of modeButtons) {
     btn.classList.toggle('active', btn.dataset.mode === mode);
@@ -51,27 +52,18 @@ function renderMode(mode, running) {
   }
 }
 
-modeButtons.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    if (current.phase !== 'idle') return;
-    window.panelApi.saveSettings({ pomodoroMode: btn.dataset.mode });
-  });
-});
-
 function renderPomodoro(st) {
   current = st;
   renderMode(st.mode || 'down', st.phase !== 'idle');
-  timeDisplay.textContent = fmt(st.remaining);
-  timeDisplay.className =
-    st.phase === 'work' || st.phase === 'workEnd' ? 'working'
-      : st.phase === 'rest' || st.phase === 'restEnd' ? 'resting' : '';
+  timeDigit.textContent = fmt(st.remaining);
+  timechip.classList.toggle('resting', ['rest', 'restEnd'].includes(st.phase));
 
-  let phaseText = PHASE_TEXT[st.phase] || '待机中';
-  if (st.phase === 'work' && st.mode === 'up') phaseText = '正向专注中';
-  phaseLabel.textContent = phaseText + (st.paused && st.phase !== 'idle' ? '(已暂停)' : '');
+  let chipText = PHASE_TEXT[st.phase] || 'FOCUS';
+  if (st.paused && st.phase !== 'idle') chipText += ' · PAUSED';
+  phaseText.textContent = chipText;
 
-  bindLabel.classList.toggle('hidden', !st.todo);
-  if (st.todo) bindLabel.textContent = `🎯 ${st.todo.text}`;
+  bindHint.classList.toggle('hidden', !st.todo);
+  if (st.todo) bindHint.textContent = `🎯 ${st.todo.text}`;
 
   completedLabel.textContent = `今日完成 🍅 × ${st.completedToday}`;
 
@@ -88,27 +80,6 @@ function renderPomodoro(st) {
   btnSkip.disabled = !running;
   btnStop.disabled = !running;
 }
-
-btnStart.addEventListener('click', () => {
-  if (current.phase === 'idle') {
-    const todo = todos.find((t) => t.id === boundTodoId) || null;
-    window.panelApi.pomodoroStart(todo);
-  } else {
-    window.panelApi.pomodoroPause();
-  }
-});
-btnSkip.addEventListener('click', () => window.panelApi.pomodoroSkip());
-btnStop.addEventListener('click', () => window.panelApi.pomodoroStop());
-
-// ---------------------------------------------------------------------------
-// 时长修改(空闲时可改,change 即保存)
-// ---------------------------------------------------------------------------
-setPomodoro.addEventListener('change', () => {
-  window.panelApi.saveSettings({ pomodoroMin: setPomodoro.value });
-});
-setRest.addEventListener('change', () => {
-  window.panelApi.saveSettings({ restMin: setRest.value });
-});
 
 // ---------------------------------------------------------------------------
 // 待办列表(只读;点击=绑定/解绑)
@@ -134,13 +105,41 @@ function renderTodos(payload) {
     const li = document.createElement('li');
     li.textContent = item.text;
     li.title = '点击绑定为本次番茄钟目标';
+    const mark = document.createElement('span');
+    mark.className = 'tomato';
+    mark.textContent = item.id === boundTodoId ? '🍅 目标' : (item.remindAt ? '🔔' : '');
     if (item.id === boundTodoId) li.classList.add('bound');
+    li.appendChild(mark);
     li.addEventListener('click', () => {
       window.panelApi.bindTodo(item.id === boundTodoId ? null : item.id);
     });
     todoList.appendChild(li);
   }
 }
+
+function boundTodoItemKey(item) { return item.id; }
+
+// ---------------------------------------------------------------------------
+// 控制
+// ---------------------------------------------------------------------------
+btnStart.addEventListener('click', () => {
+  if (current.phase === 'idle') {
+    const todo = todos.find((t) => t.id === boundTodoId) || null;
+    window.panelApi.pomodoroStart(todo);
+  } else {
+    window.panelApi.pomodoroPause();
+  }
+});
+btnSkip.addEventListener('click', () => window.panelApi.pomodoroSkip());
+btnStop.addEventListener('click', () => window.panelApi.pomodoroStop());
+
+// 时长修改(空闲时可改,change 即保存)
+setPomodoro.addEventListener('change', () => {
+  window.panelApi.saveSettings({ pomodoroMin: setPomodoro.value });
+});
+setRest.addEventListener('change', () => {
+  window.panelApi.saveSettings({ restMin: setRest.value });
+});
 
 // ---------------------------------------------------------------------------
 // 主进程推送接入

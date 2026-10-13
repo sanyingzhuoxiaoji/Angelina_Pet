@@ -2,12 +2,16 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="script-src 'self'; style-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'">
   <title>计时</title>
+  <link rel="stylesheet" href="fonts/fonts.css">
   <link rel="stylesheet" href="timer.css">
 </head>
 <body>
-  <div id="timer-text"></div>
+  <div id="chip">
+    <div id="tag">FOCUS</div>
+    <div id="timer-text"></div>
+  </div>
   <script src="timer-renderer.js"></script>
 </body>
 </html>

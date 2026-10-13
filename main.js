@@ -573,8 +573,8 @@ function createPanelWindow() {
 // ---------------------------------------------------------------------------
 // 计时小窗(桌宠左侧纯数字展示,整窗穿透,随桌宠移动)
 // ---------------------------------------------------------------------------
-const TIMER_W = 120;
-const TIMER_H = 54;
+const TIMER_W = 160;
+const TIMER_H = 100;
 let timerWasVisible = false;
 
 function createTimerWindow() {
@@ -606,7 +606,7 @@ function syncTimerPos(px, py) {
   if (px === undefined || py === undefined) { [px, py] = petWin.getPosition(); }
   timerWin.setBounds({
     x: Math.round(px) - TIMER_W - 6,
-    y: Math.round(py) + 120,
+    y: Math.round(py) + 100,
     width: TIMER_W,
     height: TIMER_H,
   });
