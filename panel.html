@@ -9,7 +9,6 @@
 <body>
   <header id="titlebar">
     <span class="title">⏳ 安洁莉娜的番茄钟</span>
-    <button id="close-btn" title="收起">✕</button>
   </header>
 
   <!-- 番茄钟 -->
@@ -27,6 +26,10 @@
       <button id="btn-stop">停止</button>
     </div>
     <div id="completed-label">今日完成 🍅 × 0</div>
+    <div class="duration-row">
+      <label>番茄 <input id="set-pomodoro" type="number" min="1" max="180"> 分</label>
+      <label>休息 <input id="set-rest" type="number" min="1" max="60"> 分</label>
+    </div>
   </section>
 
   <!-- 待办(只读,来自桌面便签) -->

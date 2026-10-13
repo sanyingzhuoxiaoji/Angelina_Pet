@@ -1,4 +1,4 @@
-// 面板渲染端:番茄钟显示/控制、待办只读列表(点击绑定)、设置
+// 面板渲染端:番茄钟显示/控制(含模式与时长)、待办只读列表(点击绑定)
 'use strict';
 
 const $ = (id) => document.getElementById(id);
@@ -11,7 +11,8 @@ const btnSkip = $('btn-skip');
 const btnStop = $('btn-stop');
 const todoList = $('todo-list');
 const todoEmpty = $('todo-empty');
-const closeBtn = $('close-btn');
+const setPomodoro = $('set-pomodoro');
+const setRest = $('set-rest');
 
 const PHASE_TEXT = {
   idle: '待机中',
@@ -74,6 +75,14 @@ function renderPomodoro(st) {
 
   completedLabel.textContent = `今日完成 🍅 × ${st.completedToday}`;
 
+  // 时长回填:仅空闲且输入框未聚焦,避免打断输入
+  const fill = (input, val) => {
+    if (document.activeElement !== input && input.value !== String(val)) input.value = val;
+  };
+  fill(setPomodoro, st.pomodoroMin);
+  fill(setRest, st.restMin);
+  setPomodoro.disabled = setRest.disabled = st.phase !== 'idle';
+
   const running = st.phase !== 'idle';
   btnStart.textContent = running && st.paused ? '继续' : running ? '暂停' : '开始';
   btnSkip.disabled = !running;
@@ -90,6 +99,16 @@ btnStart.addEventListener('click', () => {
 });
 btnSkip.addEventListener('click', () => window.panelApi.pomodoroSkip());
 btnStop.addEventListener('click', () => window.panelApi.pomodoroStop());
+
+// ---------------------------------------------------------------------------
+// 时长修改(空闲时可改,change 即保存)
+// ---------------------------------------------------------------------------
+setPomodoro.addEventListener('change', () => {
+  window.panelApi.saveSettings({ pomodoroMin: setPomodoro.value });
+});
+setRest.addEventListener('change', () => {
+  window.panelApi.saveSettings({ restMin: setRest.value });
+});
 
 // ---------------------------------------------------------------------------
 // 待办列表(只读;点击=绑定/解绑)
@@ -124,10 +143,8 @@ function renderTodos(payload) {
 }
 
 // ---------------------------------------------------------------------------
-// 其他
+// 主进程推送接入
 // ---------------------------------------------------------------------------
-closeBtn.addEventListener('click', () => window.panelApi.close());
-
 window.panelApi.onPomodoroTick(renderPomodoro);
 window.panelApi.onTodos(renderTodos);
 window.panelApi.ready();

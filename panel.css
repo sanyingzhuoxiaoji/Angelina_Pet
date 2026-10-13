@@ -95,6 +95,25 @@ body { display: flex; flex-direction: column; }
 #timer-controls button.primary:hover { opacity: 0.9; color: #fff; }
 #completed-label { font-size: 12px; opacity: 0.75; }
 
+.duration-row {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.duration-row label { display: flex; align-items: center; gap: 4px; }
+.duration-row input[type='number'] {
+  width: 48px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 12px;
+  color: var(--ink);
+  background: #fff;
+}
+.duration-row input:disabled { opacity: 0.45; }
+
 /* 待办列表 */
 #todo-section {
   flex: 1;

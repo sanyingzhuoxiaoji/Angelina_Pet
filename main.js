@@ -122,10 +122,12 @@ function pushPomodoro() {
     phase: pomodoro.phase,
     remaining: pomodoro.remaining,
     total: pomodoro.total,
-    mode: pomodoro.mode,
+    mode: pomodoro.phase === 'idle' ? (settings.pomodoroMode === 'up' ? 'up' : 'down') : pomodoro.mode,
     paused: pomodoro.paused,
     completedToday: completedToday(),
     todo: pomodoro.todo,
+    pomodoroMin: settings.pomodoroMin,
+    restMin: settings.restMin,
   });
 }
 
