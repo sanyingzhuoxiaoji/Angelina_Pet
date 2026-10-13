@@ -15,6 +15,7 @@ app.setAppUserModelId('com.angelina.pet');
 let petWin = null;
 let panelWin = null;
 let settingsWin = null;
+let timerWin = null;
 let tray = null;
 let isQuitting = false;
 
@@ -118,7 +119,7 @@ function broadcast(channel, payload) {
 }
 
 function pushPomodoro() {
-  broadcast('pomodoro:tick', {
+  const payload = {
     phase: pomodoro.phase,
     remaining: pomodoro.remaining,
     total: pomodoro.total,
@@ -128,7 +129,10 @@ function pushPomodoro() {
     todo: pomodoro.todo,
     pomodoroMin: settings.pomodoroMin,
     restMin: settings.restMin,
-  });
+  };
+  broadcast('pomodoro:tick', payload);
+  if (timerWin && !timerWin.isDestroyed()) timerWin.webContents.send('pomodoro:tick', payload);
+  updateTimerVisibility(pomodoro.phase);
 }
 
 function setPhase(phase, remainingSec) {
@@ -233,6 +237,7 @@ function startFlyHome() {
         width: PET_SIZE,
         height: BUBBLE_H + PET_SIZE,
       });
+      syncTimerPos();
     }, 33),
     dirSign: 0,
   };
@@ -566,6 +571,53 @@ function createPanelWindow() {
 }
 
 // ---------------------------------------------------------------------------
+// 计时小窗(桌宠左侧纯数字展示,整窗穿透,随桌宠移动)
+// ---------------------------------------------------------------------------
+const TIMER_W = 120;
+const TIMER_H = 54;
+let timerWasVisible = false;
+
+function createTimerWindow() {
+  timerWin = new BrowserWindow({
+    width: TIMER_W,
+    height: TIMER_H,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    skipTaskbar: true,
+    show: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'timer-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  timerWin.setAlwaysOnTop(true, 'screen-saver');
+  timerWin.setIgnoreMouseEvents(true);   // 纯展示,绝不挡点击
+  timerWin.loadFile('timer.html');
+}
+
+// 计时窗贴桌宠左侧、人物上身高度;桌宠每次移动后调用
+function syncTimerPos() {
+  if (!timerWin || timerWin.isDestroyed() || !timerWin.isVisible()) return;
+  if (!petWin || petWin.isDestroyed()) return;
+  const [px, py] = petWin.getPosition();
+  timerWin.setPosition(px - TIMER_W - 6, py + 120);
+}
+
+function updateTimerVisibility(phase) {
+  const show = phase !== 'idle';
+  if (!timerWin || timerWin.isDestroyed()) return;
+  if (show && !timerWin.isVisible()) {
+    timerWin.showInactive();
+    syncTimerPos();
+  } else if (!show && timerWin.isVisible()) {
+    timerWin.hide();
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 设置窗口(单例,托盘"设置…"弹出)
 // ---------------------------------------------------------------------------
 const SETTINGS_W = 300;
@@ -858,6 +910,7 @@ ipcMain.on('pet:drag-begin', () => {
           height: PANEL_H,
         });
       }
+      syncTimerPos();
     } catch (_) { /* 窗口销毁竞态:下帧 isDestroyed 恢复时会收尾 */ }
   }, 16);
 });
@@ -1000,6 +1053,7 @@ function startWanderSession() {
       width: PET_SIZE,
       height: BUBBLE_H + PET_SIZE,
     });
+    syncTimerPos();
   }, WANDER_TICK_MS);
 }
 
@@ -1198,11 +1252,13 @@ function handleForegroundLine(line) {
 function applyOverlayRule() {
   if (!petWin || petWin.isDestroyed()) return;
   if (fullscreenActive) {
-    // 让位:记录面板/设置窗可见性,三窗口全部隐藏(桌宠必现,直接藏)
+    // 让位:记录面板/设置/计时窗可见性,全部隐藏(桌宠必现,直接藏)
     panelWasVisible = panelWin && !panelWin.isDestroyed() && panelWin.isVisible();
     settingsWasVisible = settingsWin && !settingsWin.isDestroyed() && settingsWin.isVisible();
+    timerWasVisible = timerWin && !timerWin.isDestroyed() && timerWin.isVisible();
     if (panelWin && !panelWin.isDestroyed() && panelWin.isVisible()) panelWin.hide();
     if (settingsWin && !settingsWin.isDestroyed() && settingsWin.isVisible()) settingsWin.hide();
+    if (timerWin && !timerWin.isDestroyed() && timerWin.isVisible()) timerWin.hide();
     if (petWin.isVisible()) petWin.hide();
     return;
   }
@@ -1215,6 +1271,10 @@ function applyOverlayRule() {
   if (settingsWasVisible && settingsWin && !settingsWin.isDestroyed() && !settingsWin.isVisible()) {
     settingsWin.showInactive();
     settingsWasVisible = false;
+  }
+  if (timerWasVisible && timerWin && !timerWin.isDestroyed() && !timerWin.isVisible()) {
+    timerWin.showInactive();
+    timerWasVisible = false;
   }
 }
 
@@ -1230,6 +1290,7 @@ if (!gotLock) {
     createPetWindow();
     createPanelWindow();
     createSettingsWindow();
+    createTimerWindow();
     buildTray();
     watchTodos();
     startFullscreenWatcher();
