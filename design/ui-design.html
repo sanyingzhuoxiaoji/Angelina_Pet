@@ -146,6 +146,41 @@ h2.chapter img { height: 22px; }
 .t-pill.is-rest { background: linear-gradient(135deg, #63a894, var(--teal)); box-shadow: 0 5px 14px rgba(75,139,122,.45), inset 0 2px 3px rgba(255,255,255,.35); }
 .t-pill.is-rest::after { border-left-color: var(--teal); }
 
+/* V5 手账纸片 × UI素材:纸片 + 深棕兔子跑带 + 橙星贴纸 */
+.t-mix {
+  position: relative;
+  background: var(--paper);
+  border: 2px dashed var(--ink);
+  border-radius: 12px;
+  padding: 10px 20px 12px;
+  transform: rotate(-2deg);
+  box-shadow: 3px 4px 0 rgba(74,59,50,.18);
+}
+.t-mix::after {   /* 素材21 橙星贴纸 */
+  content: ''; position: absolute; top: -16px; right: -14px;
+  width: 34px; height: 30px;
+  background: url('../Angelina/UI素材/21.png') no-repeat center / contain;
+  transform: rotate(14deg);
+}
+.t-mix .tag {
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+  font-size: 12px; color: var(--accent); letter-spacing: 2px;
+}
+.t-mix .digits {
+  font-family: 'Baloo 2', monospace;
+  font-size: 36px; font-weight: 800; color: var(--accent);
+  font-variant-numeric: tabular-nums; line-height: 1.05;
+}
+.t-mix.is-rest .digits { color: var(--teal); }
+.t-mix.is-rest .tag { color: var(--teal); }
+.t-mix .pa-rabbits { width: 120px; height: 34px; margin: 6px auto 0; }
+.t-mix.is-rest .pa-rabbits {
+  background-image: url('../Angelina/UI素材/20.png');
+  background-size: 46% auto;
+  background-position: center;
+  animation: none;
+}
+
 /* V4 环形进度 */
 .t-ring { display: flex; align-items: center; }
 .t-ring svg { transform: rotate(-90deg); }
@@ -210,23 +245,30 @@ h2.chapter img { height: 22px; }
   font-size: 52px; font-weight: 800; color: var(--accent); line-height: 1;
 }
 .pa.is-rest .pa-time .digits { color: var(--teal); }
-.pa-dialog {   /* 素材12:猫耳 *Dialog* 涂鸦框,阶段文字叠在框心 */
-  position: relative; width: 150px; height: 62px;
+.pa-dialog {   /* 素材12:猫耳 *Dialog* 涂鸦框,阶段文字叠在框心(放大版) */
+  position: relative; width: 208px; height: 86px;
   margin: 2px auto 0;
   background: url('../Angelina/UI素材/12.png') no-repeat center / contain;
   display: flex; align-items: center; justify-content: center;
 }
 .pa-dialog .phase {
-  font-family: 'ZCOOL KuaiLe', sans-serif; font-size: 13px;
-  color: var(--ink); padding-top: 10px;
+  font-family: 'ZCOOL KuaiLe', sans-serif; font-size: 17px;
+  color: var(--ink); padding-top: 14px;
 }
-.pa-rabbits {   /* 素材19:跑步兔子四帧,随秒轮播 */
-  width: 132px; height: 38px; margin: 4px auto 0;
-  background: url('../Angelina/UI素材/19.png') no-repeat 0 0 / 400% 100%;
+.pa-rabbits {   /* 素材19:跑步兔子四帧轮播;白色涂鸦放在深棕底上才看得清 */
+  width: 136px; height: 40px; margin: 4px auto 0;
+  background-color: #2b2622;
+  border-radius: 10px;
+  background-image: url('../Angelina/UI素材/19.png');
+  background-repeat: no-repeat;
+  background-size: 400% 100%;
   animation: rabbit-run .8s steps(4) infinite;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.4);
 }
 .pa.is-rest .pa-rabbits {
-  background: url('../Angelina/UI素材/20.png') no-repeat center / contain;
+  background-image: url('../Angelina/UI素材/20.png');
+  background-size: 46% auto;
+  background-position: center;
   animation: none;
 }
 @keyframes rabbit-run {
@@ -284,8 +326,8 @@ h2.chapter img { height: 22px; }
   background: #2b2622 url('../Angelina/UI素材/22.png') center / cover;
   display: flex; align-items: center; justify-content: center;
 }
-.pb-head::before { content: ''; position: absolute; inset: 0; background: rgba(43,38,34,.35); }
-.pb-head .logo { height: 44px; position: relative; }   /* 素材10 白色活动logo */
+.pb-head::before { content: ''; position: absolute; inset: 0; background: rgba(43,38,34,.62); }
+.pb-head .logo { height: 44px; position: relative; filter: drop-shadow(0 2px 6px rgba(0,0,0,.6)); }   /* 素材10 白色活动logo */
 .pb-body { padding: 10px 16px 12px; display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .pb-mode { display: flex; background: #f1e8de; border-radius: 20px; padding: 3px; }
 .pb-mode span {
@@ -344,8 +386,8 @@ h2.chapter img { height: 22px; }
   background: #2b2622 url('../Angelina/UI素材/22.png') center / cover;
   display: flex; align-items: center; justify-content: center;
 }
-.pc-head::before { content: ''; position: absolute; inset: 0; background: rgba(43,38,34,.35); }
-.pc-head .logo { height: 34px; position: relative; }
+.pc-head::before { content: ''; position: absolute; inset: 0; background: rgba(43,38,34,.62); }
+.pc-head .logo { height: 34px; position: relative; filter: drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
 .pc-body { padding: 8px 16px 12px; display: flex; flex-direction: column; flex: 1; min-height: 0; position: relative; }
 .pc-sweet {   /* 素材2 Sweet 侧条 */
   position: absolute; right: 4px; top: 10px;
@@ -539,15 +581,16 @@ const WORK_TOTAL = 25 * 60, REST_TOTAL = 5 * 60;
 
 // 生成 4 个计时变体的场景(每个:深色 + 浅色)
 const VARIANTS = [
+  { id: 'journal', name: 'V2 · 手账纸片(当前采用)' },
+  { id: 'mix',     name: 'V5 · 手账×素材(兔子跑带+橙星贴纸)' },
   { id: 'minimal', name: 'V1 · 极简描边(Catime 流)' },
-  { id: 'journal', name: 'V2 · 手账纸片' },
   { id: 'pill',    name: 'V3 · 软糖药丸(尾巴指向人物)' },
   { id: 'ring',    name: 'V4 · 环形进度' },
 ];
 
 const variantHTML = (v, dark) => `
   <div class="scene ${dark ? 'dark' : 'light'}" data-variant="${v.id}">
-    <div class="timer-box t-${v.id} ${dark ? '' : ''}">
+    <div class="timer-box t-${v.id}">
       ${v.id === 'ring' ? `
       <div class="ring-wrap">
         <svg width="96" height="96">
@@ -556,7 +599,10 @@ const variantHTML = (v, dark) => `
                   stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="0"></circle>
         </svg>
         <div class="digits" data-timer-text>25:00</div>
-      </div>` : `
+      </div>` : v.id === 'mix' ? `
+      <div class="tag" data-phase-tag>FOCUS</div>
+      <div class="digits" data-timer-text>25:00</div>
+      <div class="pa-rabbits"></div>` : `
       <div class="tag" data-phase-tag>FOCUS</div>
       <div class="digits" data-timer-text>25:00</div>`}
     </div>
@@ -575,7 +621,8 @@ VARIANTS.forEach((v) => {
        <div style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:16px;">${v.name}</div>
        <div style="font-size:12.5px;line-height:1.9;margin-top:8px;opacity:.75">${
          v.id === 'minimal' ? '纯数字 + 深色描边,信息零遮挡,最不打扰。数字加大加粗,任何桌面都清晰。' :
-         v.id === 'journal' ? '米纸小卡片 + 虚线边 + 兔子涂鸦贴纸,像从手账里撕下来的一角,微倾斜更俏皮。' :
+         v.id === 'journal' ? '米纸小卡片 + 虚线边 + 兔子涂鸦贴纸,像从手账里撕下来的一角,微倾斜更俏皮。(当前采用)' :
+         v.id === 'mix' ? '手账纸片基础上融入素材:内嵌深棕兔子跑带(白色涂鸦在深底上才清晰),休息换跳跃兔;右上角橙星贴纸。' :
          v.id === 'pill' ? '药丸底 + 尾巴指向人物,兼顾"气泡感"与计时功能;休息时整颗变青绿。' :
          'SVG 圆环实时反映剩余比例,数字居中;一眼看出"这轮还剩多少"。'}</div>
        <div class="label">${dark_tip()}</div>
@@ -597,7 +644,7 @@ function renderAll() {
   document.querySelectorAll('[data-phase-tag]').forEach((el) => { el.textContent = isRest ? 'BREAK' : 'FOCUS'; });
 
   // 工作橘红 / 休息青绿
-  document.querySelectorAll('.t-minimal, .t-journal, .t-pill, .t-ring').forEach((el) => {
+  document.querySelectorAll('.t-minimal, .t-journal, .t-pill, .t-ring, .t-mix').forEach((el) => {
     el.classList.toggle('is-rest', isRest);
   });
   document.getElementById('panel-a').classList.toggle('is-rest', isRest);
