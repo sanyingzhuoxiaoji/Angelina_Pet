@@ -1,0 +1,61 @@
+{
+  "name": "angelina-pet",
+  "productName": "安洁莉娜桌宠",
+  "version": "1.0.0",
+  "description": "明日方舟安洁莉娜桌宠 - GIF 桌宠 + 番茄钟 + 便签待办只读展示",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "license": "MIT",
+  "author": "sanyingzhuoxiaoji",
+  "devDependencies": {
+    "electron": "^43.7.9",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.sanyingzhuo.angelina-pet",
+    "productName": "安洁莉娜桌宠",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "lines.js",
+      "preload.js",
+      "panel-preload.js",
+      "settings-preload.js",
+      "timer-preload.js",
+      "pet.html",
+      "pet.css",
+      "pet-renderer.js",
+      "panel.html",
+      "panel.css",
+      "panel-renderer.js",
+      "settings.html",
+      "settings.css",
+      "settings-renderer.js",
+      "timer.html",
+      "timer.css",
+      "timer-renderer.js",
+      "fonts/**",
+      "Angelina/**"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "安洁莉娜桌宠"
+    }
+  }
+}
