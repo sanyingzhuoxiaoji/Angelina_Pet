@@ -5,6 +5,9 @@ const $ = (id) => document.getElementById(id);
 
 function renderSettings(s) {
   $('set-spring').checked = s.springDrag;
+  $('set-autostart').checked = s.autoStart;
+  // 实际生效与期望不符(被拦截)时提示
+  $('autostart-hint').classList.toggle('hidden', !s.autoStart || !!s.autoStartOk);
   $('set-sedentary-on').checked = s.sedentaryOn;
   $('set-sedentary').value = s.sedentaryMin;
   $('set-wander-on').checked = s.wanderOn;
@@ -18,6 +21,7 @@ function renderSettings(s) {
 function collectAndSave() {
   window.appSettingsApi.save({
     springDrag: $('set-spring').checked,
+    autoStart: $('set-autostart').checked,
     sedentaryOn: $('set-sedentary-on').checked,
     sedentaryMin: $('set-sedentary').value,
     wanderOn: $('set-wander-on').checked,
@@ -25,7 +29,7 @@ function collectAndSave() {
     idleCooldownMin: $('set-cooldown').value,
   });
 }
-for (const id of ['set-spring', 'set-sedentary-on', 'set-sedentary', 'set-wander-on', 'set-wander-idle', 'set-cooldown']) {
+for (const id of ['set-spring', 'set-autostart', 'set-sedentary-on', 'set-sedentary', 'set-wander-on', 'set-wander-idle', 'set-cooldown']) {
   $(id).addEventListener('change', collectAndSave);
 }
 

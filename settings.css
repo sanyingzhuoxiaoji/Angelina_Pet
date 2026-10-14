@@ -60,6 +60,13 @@ body { display: flex; flex-direction: column; }
 }
 .row.indent { margin-left: 22px; }
 
+.hint-line {
+  font-size: 11px;
+  color: #c07a2a;
+  margin-top: 4px;
+}
+.hint-line.hidden { display: none; }
+
 input[type='number'] {
   width: 52px;
   border: 1px solid var(--line);

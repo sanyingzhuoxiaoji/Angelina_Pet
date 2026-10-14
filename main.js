@@ -39,6 +39,7 @@ const SETTINGS_DEFAULTS = {
   pomodoroMode: 'down',      // 番茄钟模式:'down' 倒计时 | 'up' 正向(秒表)
   focusDate: '',             // 今日专注累计所属日期(YYYY-MM-DD,跨天自动归零)
   focusMinutesToday: 0,      // 今日累计专注分钟(小数,秒累积)
+  autoStart: false,          // 开机自启动(便签同款:系统登录项)
 };
 
 function settingsFile() {
@@ -761,6 +762,32 @@ function togglePanel() {
   pushTodos();
 }
 
+// ---------------------------------------------------------------------------
+// 开机自启动(便签同款:系统登录项)
+// ---------------------------------------------------------------------------
+function loginItemOpts() {
+  return {
+    openAtLogin: true,
+    path: process.execPath,
+    args: app.isPackaged ? [] : ['.'],   // 开发态需要带应用目录参数
+  };
+}
+
+// 设置登录项并回读实际生效值(被组策略/杀软拦截时 actual 为 false)
+function applyAutoStart(desired) {
+  settings.autoStart = !!desired;
+  try {
+    app.setLoginItemSettings(loginItemOpts());
+  } catch (err) {
+    console.error('[autostart] 设置失败:', err);
+  }
+  let actual = false;
+  try {
+    actual = app.getLoginItemSettings(loginItemOpts()).openAtLogin;
+  } catch (_) { /* 读取失败按未生效处理 */ }
+  return actual;
+}
+
 function pushSettingsToPanel() {
   const payload = publicSettings();
   if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('settings:push', payload);
@@ -778,6 +805,8 @@ function publicSettings() {
     springDrag: settings.springDrag,
     wanderIdleMin: settings.wanderIdleMin || 1,
     idleCooldownMin: settings.idleCooldownMin || 3,
+    autoStart: !!settings.autoStart,
+    autoStartOk: !!settings.autoStartOk,
   };
 }
 
@@ -1219,6 +1248,9 @@ function applySettingsPatch(patch) {
     if (typeof patch.springDrag === 'boolean') settings.springDrag = patch.springDrag;
     settings.wanderIdleMin = num(patch.wanderIdleMin, 1, 60, settings.wanderIdleMin || 1);
     settings.idleCooldownMin = num(patch.idleCooldownMin, 1, 60, settings.idleCooldownMin || 3);
+    if (typeof patch.autoStart === 'boolean') {
+      settings.autoStartOk = applyAutoStart(patch.autoStart);
+    }
     if (typeof patch.wanderOn === 'boolean') {
       settings.wanderOn = patch.wanderOn;
       if (!settings.wanderOn) interruptIdleActivities();
@@ -1366,6 +1398,8 @@ if (!gotLock) {
     buildTray();
     watchTodos();
     startFullscreenWatcher();
+    // 已开启自启动时刷新登录项(应用更新/移动后路径变化可自愈)
+    if (settings.autoStart) applyAutoStart(true);
   });
 
   app.on('before-quit', () => { isQuitting = true; });
