@@ -112,6 +112,7 @@ function todayStr() {
 }
 
 function completedToday() {
+  // 完成时先读取这个跨日结果，再写 completedDate，不能反过来。
   if (settings.completedDate !== todayStr()) return 0;
   return settings.completedToday;
 }
@@ -338,8 +339,8 @@ function onTick() {
   switch (pomodoro.phase) {
     case 'work': {
       addFocusSeconds(sessionFocusSeconds());
-      settings.completedDate = todayStr();
       settings.completedToday = completedToday() + 1;
+      settings.completedDate = todayStr();
       saveSettings();
       notify('番茄钟完成!', pomodoro.todo ? `「${pomodoro.todo.text}」做得好,休息一下吧~` : '做得好,休息一下吧~');
       showBubble(pick('workEnd'));
@@ -377,8 +378,8 @@ function skipPomodoro() {
     addFocusSeconds(sessionFocusSeconds());
     // 正向模式"跳过"= 提前收工,时长可能不足,不计完成
     if (pomodoro.mode !== 'up') {
-      settings.completedDate = todayStr();
       settings.completedToday = completedToday() + 1;
+      settings.completedDate = todayStr();
       saveSettings();
     }
     setPhase('rest', settings.restMin * 60);
@@ -393,8 +394,8 @@ function stopPomodoro() {
   // 正向模式停止:满一个番茄时长算完成,走完成→休息流程;不足则静默回空闲
   if (pomodoro.mode === 'up' && pomodoro.phase === 'work' && pomodoro.elapsed >= settings.pomodoroMin * 60) {
     addFocusSeconds(sessionFocusSeconds());
-    settings.completedDate = todayStr();
     settings.completedToday = completedToday() + 1;
+    settings.completedDate = todayStr();
     saveSettings();
     notify('正向专注完成!', `专注了 ${Math.round(pomodoro.elapsed / 60)} 分钟,休息一下吧~`);
     showBubble(pick('workEnd'));
@@ -629,7 +630,6 @@ function createPanelWindow() {
 // ---------------------------------------------------------------------------
 const TIMER_W = 160;
 const TIMER_H = 100;
-let timerWasVisible = false;
 
 function createTimerWindow() {
   timerWin = new BrowserWindow({
@@ -667,7 +667,8 @@ function syncTimerPos(px, py) {
 }
 
 function updateTimerVisibility(phase) {
-  const show = phase !== 'idle';
+  const show = phase !== 'idle' && !fullscreenActive
+    && petWin && !petWin.isDestroyed() && petWin.isVisible();
   if (!timerWin || timerWin.isDestroyed()) return;
   if (show && !timerWin.isVisible()) {
     timerWin.showInactive();
@@ -1356,14 +1357,13 @@ function handleForegroundLine(line) {
 function applyOverlayRule() {
   if (!petWin || petWin.isDestroyed()) return;
   if (fullscreenActive) {
-    // 让位:记录面板/设置/计时窗可见性,全部隐藏(桌宠必现,直接藏)
+    // 记录面板/设置窗可见性；计时窗统一按当前阶段和全屏状态决定显隐。
     panelWasVisible = panelWin && !panelWin.isDestroyed() && panelWin.isVisible();
     settingsWasVisible = settingsWin && !settingsWin.isDestroyed() && settingsWin.isVisible();
-    timerWasVisible = timerWin && !timerWin.isDestroyed() && timerWin.isVisible();
     if (panelWin && !panelWin.isDestroyed() && panelWin.isVisible()) panelWin.hide();
     if (settingsWin && !settingsWin.isDestroyed() && settingsWin.isVisible()) settingsWin.hide();
-    if (timerWin && !timerWin.isDestroyed() && timerWin.isVisible()) timerWin.hide();
     if (petWin.isVisible()) petWin.hide();
+    updateTimerVisibility(pomodoro.phase);
     return;
   }
   // 自愈:退出全屏后恢复(不抢焦点)
@@ -1376,10 +1376,7 @@ function applyOverlayRule() {
     settingsWin.showInactive();
     settingsWasVisible = false;
   }
-  if (timerWasVisible && timerWin && !timerWin.isDestroyed() && !timerWin.isVisible()) {
-    timerWin.showInactive();
-    timerWasVisible = false;
-  }
+  updateTimerVisibility(pomodoro.phase);
 }
 
 const gotLock = app.requestSingleInstanceLock();
